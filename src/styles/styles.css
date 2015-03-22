@@ -1,0 +1,44 @@
+﻿.scene {
+    font: 12px sans-serif;
+    shape-rendering: crispEdges;
+}
+
+.scene rect.logicitem {
+    fill: #FFFF7F;
+    stroke: black;
+}
+
+.scene text.logicitem {
+    font: 12px sans-serif;
+    text-anchor: middle;
+    alignment-baseline: central;
+}
+
+.scene line {
+    stroke: black;
+}
+
+.scene line.grid-major {
+    stroke-opacity: 0.1568627450980392;
+}
+
+.scene line.grid-minor {
+    stroke-opacity: 0.0784313725490196;
+}
+
+.scene line.linetree-active {
+    stroke: red;
+}
+
+.navbar {
+    margin-bottom: 0;
+}
+
+body {
+    margin: 0;
+    /*transform: translate(0.5px, 0.5px);*/
+}
+.ui-layout-center {
+	overflow: auto;
+} 
+
