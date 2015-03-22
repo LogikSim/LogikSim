@@ -5,8 +5,8 @@ circuits; A logic simulator that makes it easy and fun to explore and
 design digital circuits starting from simple AND gates, up to complex
 computing systems as we use them today.
 
-#Demo
-Current demo is available at:
+### Demo ###
+Our current demo is available at:
 
 https://rawgit.com/LogikSim/LogikSim/master/src/index.html
 
