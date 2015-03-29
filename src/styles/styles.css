@@ -1,14 +1,17 @@
-﻿.scene {
+﻿
+/* Scene specific styles */
+
+.scene {
     font: 12px sans-serif;
     shape-rendering: crispEdges;
 }
 
-.scene rect.logicitem {
+.scene rect.logic {
     fill: #FFFF7F;
     stroke: black;
 }
 
-.scene text.logicitem {
+.scene text.logic {
     font: 12px sans-serif;
     text-anchor: middle;
     alignment-baseline: central;
@@ -30,15 +33,31 @@
     stroke: red;
 }
 
-.navbar {
-    margin-bottom: 0;
-}
+/*body {
+    margin: 0;
+    transform: translate(0.5px, 0.5px);
+}*/
+
+
+
+
+/* Bootstrap sepecifc styles */
 
 body {
-    margin: 0;
-    /*transform: translate(0.5px, 0.5px);*/
+  padding-top: 70px;
+  padding-bottom: 30px;
 }
-.ui-layout-center {
-	overflow: auto;
-} 
 
+.theme-dropdown .dropdown-menu {
+  position: static;
+  display: block;
+  margin-bottom: 20px;
+}
+
+.theme-showcase > p > .btn {
+  margin: 5px 0;
+}
+
+.theme-showcase .navbar .container {
+  width: auto;
+}

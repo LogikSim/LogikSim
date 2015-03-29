@@ -1,0 +1,11 @@
+
+
+*.sln
+*.suo
+*.vbproj
+*.vbproj.user
+My\ Project/
+Web.config
+Web.Debug.config
+Web.Release.config
+obj/

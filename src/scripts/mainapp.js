@@ -3,14 +3,7 @@
 $(document).ready(function () {
     // Initialize jquery slider
     $("#slider").slider();
-    myLayout = $('body').layout({
-        resizable: false,
-        spacing_open: 0,
-    });
-
-    $(window).resize(on_resize_ui);
-    on_resize_ui();
-
+    
     // Create the model class via Backbone (which sets up things like prototype objects correctly). 
     // This particular model is a very simple one. It'll have just 1 attribute - "slidervalue"
     var SliderModel = Backbone.Model.extend({});
@@ -39,10 +32,3 @@ $(document).ready(function () {
     var sliderModel = new SliderModel;
     var sliderView = new SliderView({ model: sliderModel });
 });
-
-
-on_resize_ui = function () {
-    nav_h = $("#navbar-header").outerHeight() + 1;
-    console.log(nav_h);
-    myLayout.sizePane('north', nav_h);
-};
