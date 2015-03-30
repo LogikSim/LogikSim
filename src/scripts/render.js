@@ -33,12 +33,17 @@ function to_grid(z) {
     return Math.round(z * grid * scale);
 }
 
-var width = to_grid(scene_data.scene_width) + 1,
-    height = to_grid(scene_data.scene_height) + 1;
+var width = to_grid(scene_data.scene_width) + 2,
+    height = to_grid(scene_data.scene_height) + 2;
 
 var scene = d3.select(".scene")
     .attr("width", width)
     .attr("height", height);
+
+scene = scene.append("g")
+    .attr("transform", function (d, i) {
+        return "translate(0.5, 0.55)";
+    })
 
 
 
@@ -46,31 +51,26 @@ var scene = d3.select(".scene")
 // background
 //
 
-var pattern = scene.append('defs')
-    .append('pattern')
-        .attr('id', 'gridPattern')
-        .attr('width', to_grid(5))
-        .attr('height', to_grid(5))
-        .attr('patternUnits', 'userSpaceOnUse')
-for (var i = 0; i < 5; i++) {
-    var line_class = i === 0 ? "grid-major" : "grid-minor";
-    pattern.append("line")
+var grid_group = scene.append("g");
+for (var i = 0; i <= scene_data.scene_height; i++) {
+    var line_class = i  % 5 === 0 ? "grid-major" : "grid-minor";
+    grid_group.append("line")
         .attr("class", line_class)
         .attr("x1", to_grid(0))
-        .attr("x2", to_grid(5))
+        .attr("x2", to_grid(scene_data.scene_width))
         .attr("y1", to_grid(i))
         .attr("y2", to_grid(i));
-    pattern.append("line")
+}
+for (var i = 0; i <= scene_data.scene_width; i++) {
+    var line_class = i % 5 === 0 ? "grid-major" : "grid-minor";
+    grid_group.append("line")
         .attr("class", line_class)
         .attr("x1", to_grid(i))
         .attr("x2", to_grid(i))
         .attr("y1", to_grid(0))
-        .attr("y2", to_grid(5));
+        .attr("y2", to_grid(scene_data.scene_height));
 }
-scene.append("rect")
-    .attr('width', width)
-    .attr('height', height)
-    .attr("fill", 'url(#gridPattern)');
+
 
 //
 // logicitems
@@ -188,7 +188,7 @@ scene_data.items.forEach(function (item) {
 
 
 // create all items
-var logicitems = scene.selectAll("g")
+var logicitems = scene.selectAll("g.item")
     .data(items)
     .enter().append("g")
     .attr("transform", function (d, i) {
@@ -255,7 +255,7 @@ scene.selectAll("g.interconnect")
     .attr("d", function (d) { return d });
 
 // draw edge indicators
-var radius = 0.25;
+var radius = 0.27;
 scene.selectAll("g.interconnect")
     .selectAll("g")
     .data(function (d) { return d.indicators })

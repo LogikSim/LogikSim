@@ -5,7 +5,7 @@
 
 .scene {
     font: 12px sans-serif;
-    shape-rendering: crispEdges;
+/*    shape-rendering: crispEdges; */
 }
 
 /* basic items */
@@ -49,7 +49,7 @@
 
 .scene rect.interconnect {
     fill: black;
-    stroke: none;
+    stroke: black;
 }
 
 /*body {
