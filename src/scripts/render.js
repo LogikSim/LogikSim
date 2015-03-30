@@ -8,9 +8,9 @@ function P(x, y) {
 };
 
 var scene_data = {
-    width: 500, // view width in px
-    scene_width: 50, // scene width in scene coordinates
-    scene_height: 30, // scene height in scene coordinates
+    width: 300, // view width in px
+    scene_width: 30, // scene width in scene coordinates
+    scene_height: 15, // scene height in scene coordinates
     items: [
         { type: "and", x: 10, y: 4 },
         { type: "or", x: 10, y: 8 },
