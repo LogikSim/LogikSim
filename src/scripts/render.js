@@ -8,9 +8,9 @@ function P(x, y) {
 };
 
 var scene_data = {
-    width: 300, // view width in px
     scene_width: 30, // scene width in scene coordinates
     scene_height: 15, // scene height in scene coordinates
+    scale: 10, // number of pixels for one scene coordinate
     items: [
         { type: "and", x: 10, y: 4 },
         { type: "or", x: 10, y: 8 },
@@ -24,13 +24,9 @@ var scene_data = {
 };
 
 
-
-var grid = 100; // spacing
-var scale = scene_data.width / grid / scene_data.scene_width;
-
 // convert scene coordinates to view coordinates
 function to_grid(z) {
-    return Math.round(z * grid * scale);
+    return Math.round(z * scene_data.scale);
 }
 
 var width = to_grid(scene_data.scene_width) + 2,
