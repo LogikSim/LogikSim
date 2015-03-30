@@ -1,10 +1,14 @@
 ﻿
-/* Scene specific styles */
+/* 
+ *  Scene specific styles 
+ */
 
 .scene {
     font: 12px sans-serif;
     shape-rendering: crispEdges;
 }
+
+/* basic items */
 
 .scene rect.logic {
     fill: #FFFF7F;
@@ -16,6 +20,8 @@
     text-anchor: middle;
     alignment-baseline: central;
 }
+
+/* background lines */
 
 .scene line {
     stroke: black;
@@ -29,14 +35,21 @@
     stroke-opacity: 0.0784313725490196;
 }
 
-.scene line.linetree-active {
-    stroke: red;
-}
+/* interconnect */
 
-.interconnect {
+/*.scene line.linetree-active {
+    stroke: red;
+}*/
+
+.scene path.interconnect {
     stroke: black;
     fill: none;
     stroke-width: 1px;
+}
+
+.scene rect.interconnect {
+    fill: black;
+    stroke: none;
 }
 
 /*body {
@@ -47,7 +60,9 @@
 
 
 
-/* Bootstrap sepecifc styles */
+/* 
+ * Bootstrap sepecifc styles
+ */
 
 body {
   padding-top: 70px;
