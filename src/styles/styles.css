@@ -33,6 +33,12 @@
     stroke: red;
 }
 
+.interconnect {
+    stroke: black;
+    fill: none;
+    stroke-width: 1px;
+}
+
 /*body {
     margin: 0;
     transform: translate(0.5px, 0.5px);

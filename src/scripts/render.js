@@ -3,15 +3,20 @@
 // scene
 //
 
+function P(x, y) {
+    return { x: x, y: y };
+};
+
 var scene_data = {
     width: 500, // view width in px
     scene_width: 50, // scene width in scene coordinates
     scene_height: 30, // scene height in scene coordinates
     items: [
-        { type: "and", x: 5, y: 5 },
-        { type: "or", x: 5, y: 8 },
-        { type: "xor", x: 10, y: 6 },
-        { type: "interconnect", tree: [(7,6), [(10, 6)]]}
+        { type: "and", x: 10, y: 5 },
+        { type: "or", x: 10, y: 8 },
+        { type: "xor", x: 16, y: 6 },
+        { type: "interconnect", tree: [P(12, 6), P(16, 6)] },
+        { type: "interconnect", tree: [P(12, 9), P(14, 9), P(14, 8), P(16, 8)] },
     ]
 };
 
@@ -105,6 +110,33 @@ function Interconnect(data) {
     Item.call(this, data);
 
     this.types += " interconnect";
+    this.tree = data.tree;
+    this.paths = this.tree_to_paths(data.tree);
+}
+
+Interconnect.prototype.tree_to_paths = function(tree) {
+    function iter_tree(tree, last_node) {
+        var path = "";
+        for (i = 0; i < tree.length ; i++) {
+            var item = tree[i];
+            var str_p = to_grid(item.x) + " " + to_grid(item.y);
+            if (typeof item == Array) {
+
+            } else {
+                if (last_node == null) {
+                    console.log(tree);
+                    path += "M " + str_p;
+                } else {
+                    path += " L " + str_p;
+                }
+                last_node = item;
+            }
+        }
+        return [path];
+    }
+    paths = iter_tree(tree, null);
+    console.log(paths);
+    return paths;
 }
 
 var type_map = {
@@ -118,7 +150,8 @@ items = [];
 scene_data.items.forEach(function (item) {
     items.push(new type_map[item.type](item));
 });
-    
+
+
 // create all items
 var logicitems = scene.selectAll("g")
     .data(items)
@@ -174,5 +207,13 @@ baseitems.append("text")
         return d.text;
     });
     
-    
+
 // create interconnect items
+
+scene.selectAll("g.interconnect")
+    .selectAll("g")
+    .data(function (d) { return d.paths })
+    .enter()
+    .append("path")
+    .attr("class", "interconnect")
+    .attr("d", function (d) { console.log(d); return d });
