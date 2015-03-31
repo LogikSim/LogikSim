@@ -1,0 +1,10 @@
+language: node_js
+node_js:
+    - "0.12"
+addons:
+    code_climate:
+        repo_token:
+            secure: "h9jVd9GhC2joreRBH8N/tbFJvBYak8uTtPE5o4YEIVeAbEa0LjlWXrZ83D9RkOI/vqIsBvjAdY0+NQ45dC1NaIRE4vj3n8zAZg4+ndX3WrAQN/0uUQ3p3DVKgYLDR9Wi0d75wn4PCyftdb4gaKf6r8btxe0nF/XAwKMrk94BfQ0="
+after_script:
+    - codeclimate < coverage/**/lcov.info
+
