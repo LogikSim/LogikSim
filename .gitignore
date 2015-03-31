@@ -1,5 +1,3 @@
-
-
 *.sln
 *.suo
 *.vbproj
@@ -9,3 +7,7 @@ Web.config
 Web.Debug.config
 Web.Release.config
 obj/
+node_modules/
+.idea/
+coverage/
+LogikSim.iml

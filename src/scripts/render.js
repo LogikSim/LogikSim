@@ -194,23 +194,23 @@ var logicitems = scene.selectAll("g.item")
     .attr("class", function (d, i) {
         return d.types;
     });
-    
-    
+
+
 
 
 // create text items
-    
+
 var baseitems = scene.selectAll("g.baseitem");
-    
+
 var overlapp = 0.37;
-    
+
 // rect
 baseitems.append("rect")
     .attr("class", "logic")
     .attr("y", to_grid(-overlapp))
     .attr("width", to_grid(2))
     .attr("height", to_grid(2 + 2 * overlapp));
-    
+
 //input connector
 for (var i = 0; i < 3; ++i) {
     baseitems.append("line")
@@ -220,7 +220,7 @@ for (var i = 0; i < 3; ++i) {
         .attr("y1", to_grid(i))
         .attr("y2", to_grid(i));
 }
-    
+
 // output connector
 baseitems.append("line")
     .attr("class", "logic")
@@ -228,7 +228,7 @@ baseitems.append("line")
     .attr("x2", to_grid(2.5))
     .attr("y1", to_grid(1))
     .attr("y2", to_grid(1));
-    
+
 // label
 baseitems.append("text")
     .attr("class", "logic")
@@ -237,7 +237,7 @@ baseitems.append("text")
     .text(function (d, i) {
         return d.text;
     });
-    
+
 
 // create interconnect items
 
