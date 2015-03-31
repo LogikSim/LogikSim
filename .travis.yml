@@ -7,4 +7,7 @@ addons:
             secure: "h9jVd9GhC2joreRBH8N/tbFJvBYak8uTtPE5o4YEIVeAbEa0LjlWXrZ83D9RkOI/vqIsBvjAdY0+NQ45dC1NaIRE4vj3n8zAZg4+ndX3WrAQN/0uUQ3p3DVKgYLDR9Wi0d75wn4PCyftdb4gaKf6r8btxe0nF/XAwKMrk94BfQ0="
 after_script:
     - codeclimate < coverage/**/lcov.info
-
+cache:
+    directories:
+        - node_modules
+sudo: false # Explicitely request container based build so we can use caching
