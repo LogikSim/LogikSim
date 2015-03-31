@@ -1,4 +1,5 @@
 # LogikSim
+[![Build Status](https://travis-ci.org/LogikSim/LogikSim.svg?branch=master)](https://travis-ci.org/LogikSim/LogikSim) [![Test Coverage](https://codeclimate.com/github/LogikSim/LogikSim/badges/coverage.svg)](https://codeclimate.com/github/LogikSim/LogikSim) [![Code Climate](https://codeclimate.com/github/LogikSim/LogikSim/badges/gpa.svg)](https://codeclimate.com/github/LogikSim/LogikSim) 
 
 Our vision is to build the world's best software to understand digital
 circuits; A logic simulator that makes it easy and fun to explore and
