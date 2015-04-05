@@ -7,10 +7,13 @@ module.exports = function(config) {
     // base path that will be used to resolve all patterns (eg. files, exclude)
     basePath: '../',
 
-
     // frameworks to use
     // available frameworks: https://npmjs.org/browse/keyword/karma-adapter
-    frameworks: ['jasmine-jquery', 'jasmine'],
+    frameworks: [
+      'phantomjs-shim', // Function.bind for PhantomJS 1.X.X
+      'jasmine-jquery',
+      'jasmine'
+    ],
 
 
     // list of files / patterns to load in the browser
@@ -19,7 +22,10 @@ module.exports = function(config) {
       'test/karma-fixture-setup.js',
       'test/unit/*.html',
 
-      'src/scripts/backend.js', // Placeholder
+      {pattern: 'src/scripts/backend/worker.js', included: false}, // Web-worker script with entry point
+      {pattern: 'src/scripts/render.js', included: false}, // UI with global effects\
+
+      'src/scripts/**/*.js',
 
       // Spec files
       'test/unit/*.js'
@@ -46,7 +52,7 @@ module.exports = function(config) {
 
 
     coverageReporter: {
-        type: 'lcov',
+        type: 'lcov'
     },
     // web server port
     //port: 9876,
