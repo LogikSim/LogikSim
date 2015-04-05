@@ -18,6 +18,12 @@ LogikSim.Backend.Event = function(when, group) {
     this._order = null; // Set when event is scheduled.
 };
 
+LogikSim.Backend.Event.prototype = {
+    process: function(last_in_group) {
+        return [];
+    }
+};
+
 /**
  * Custom comparator function which defines the execution order of
  * the Events.

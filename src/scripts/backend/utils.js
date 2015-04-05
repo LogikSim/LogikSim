@@ -42,7 +42,7 @@ LogikSim.Backend.make_priority_queue = function(cmp_fu) {
         var max = this.length;
 
         while (min !== max) {
-            var center = ((max - min) >> 2) + min;
+            var center = ((max - min) >> 1) + min;
             var cmp = cmp_fu(item, this[center]);
             if (cmp < 0) {
                 max = center;
@@ -59,3 +59,29 @@ LogikSim.Backend.make_priority_queue = function(cmp_fu) {
     return pq;
 };
 
+
+(function() {
+    // Jasmine is a bit naive with its type detection when trying to
+    // figure out whether a thrown error matches an expected type.
+    // It uses MyType.constructor.name which for the usual definition syntax
+    // we use is empty as we assign from a lambda. To work around this we
+    // actually define a named function. Also we seemingly can't re-use the
+    // error constructor to get a stack trace so we misuse Error to attempt
+    // to get one anyways.
+
+    /**
+     * Custom backend error type.
+     * @param message Error message
+     * @constructor
+     */
+    function BackendError(message) {
+        this.name = this.constructor.name;
+        this.message = message || 'An unidentified error occurred in the LogikSim backend';
+        this.stack = (new Error).stack;
+    }
+
+    BackendError.prototype = Object.create(Error.prototype);
+    BackendError.prototype.constructor = BackendError;
+
+    LogikSim.Backend.BackendError = BackendError;
+}());

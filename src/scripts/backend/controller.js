@@ -36,7 +36,7 @@ LogikSim.Backend.Controller = function(core, logger) {
     this._message_handler = {
         start: this._on_start,
         stop: this._on_stop
-    }
+    };
 };
 
 LogikSim.Backend.Controller.prototype = {
@@ -57,7 +57,7 @@ LogikSim.Backend.Controller.prototype = {
             var handler = this._message_handler[msg.type];
             if (typeof handler === 'undefined') {
                 // No handler for this message type
-                throw "Unkown message type '" + msg.type + "'";
+                throw new LogikSim.Backend.BackendError("Unknown message type '" + msg.type + "'");
             }
 
             handler.call(this, msg);
@@ -88,7 +88,7 @@ LogikSim.Backend.Controller.prototype = {
         message.clock = this.core._clock; //FIXME: Should use a clock property
 
         if (this._current_request_id !== null) {
-            message.in_reply_to = this._current_request_id
+            message.in_reply_to = this._current_request_id;
         }
 
         this._post_raw(message);
@@ -99,7 +99,7 @@ LogikSim.Backend.Controller.prototype = {
      * @private
      */
     _post_raw: function (message) {
-        postMessage(message);
+        postMessage(message); // jshint ignore:line
     },
     /**
      * Starts the simulation core.

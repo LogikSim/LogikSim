@@ -34,12 +34,12 @@ LogikSim.Logger = function(name, minimum_level, target) {
             //FIXME: For some strange reason even with a shim bind on console.log doesn't work with PhantomJS 1.X
             //       Probably easiest to wait until PhantomJS 2 is supported by karma and just switch.
             console.log(message);
-        }
+        };
     } else if (typeof self !== 'undefined') {
         if (typeof self.console !== 'undefined') {
             this.target = self.console.log.bind(self.console); // Web-worker scope (https://developer.mozilla.org/en-US/docs/Web/API/DedicatedWorkerGlobalScope)
         } else {
-            this.target = function (msg) {}; // No good default behavior possible :(
+            this.target = function () {}; // No good default behavior possible :(
         }
     }
 

@@ -60,3 +60,14 @@ describe("A priority queue", function() {
     // As long as it is array based and we retrieve the values with shift we
     // don't have to bother testing removal.
 });
+
+describe("A LogikSim.Backend.BackendError", function () {
+    it("should be throwable and be caught by Jasmine", function() {
+        function err() {
+            throw new LogikSim.Backend.BackendError("Foo");
+        }
+
+        expect(err).toThrowError(LogikSim.Backend.BackendError, "Foo");
+        expect(err).toThrowError(LogikSim.Backend.BackendError);
+    });
+});

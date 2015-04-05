@@ -57,10 +57,10 @@ LogikSim.Backend.Core = function(logger) {
 
 LogikSim.Backend.Core.prototype = {
     /**
-     * Schedule an event for processing.
+     * Schedule a future event for processing.
      * If needed adjusts event processing scheduling.
      *
-     * @param event Event to schedule
+     * @param event Future event to schedule
      */
     schedule: function(event) {
         var before = this.event_queue[0];
@@ -71,10 +71,10 @@ LogikSim.Backend.Core.prototype = {
         }
     },
     /**
-     * Schedule multiple events for processing.
+     * Schedule multiple future events for processing.
      * If needed adjusts event processing scheduling.
      *
-     * @param events Events to schedule
+     * @param events Future events to schedule
      */
     schedule_many: function(events) {
         var before = this.event_queue[0];
@@ -89,7 +89,7 @@ LogikSim.Backend.Core.prototype = {
      */
     start: function () {
         if (this._start_time !== null) {
-            throw "Simulation was already started once";
+            throw new LogikSim.Backend.BackendError("Simulation was already started once");
         }
 
         this.log.info("Starting event processing");
@@ -146,7 +146,7 @@ LogikSim.Backend.Core.prototype = {
      */
     quit: function() {
         if (this._quit) {
-            throw "Simulation was already stopped";
+            throw new LogikSim.Backend.BackendError("Simulation was already stopped");
         }
 
         this.log.info("Stopping event processing");
@@ -160,7 +160,7 @@ LogikSim.Backend.Core.prototype = {
      * @private
      */
     _process_next_event: function(upto_clock) {
-        if (this.event_queue.length == 0 || this.event_queue[0].when > upto_clock) {
+        if (this.event_queue.length === 0 || this.event_queue[0].when > upto_clock) {
             // If queue is empty circuit is steady state so simulation is
             // infinitely fast. Also we need this clock behavior to make delta
             // timing work. It totally makes sense though ;)
@@ -169,7 +169,7 @@ LogikSim.Backend.Core.prototype = {
             return null;
         }
 
-        var event = self.event_queue.shift();
+        var event = this.event_queue.shift();
 
         this.clock = event.when;
         this.group = event.group;
@@ -187,7 +187,7 @@ LogikSim.Backend.Core.prototype = {
     /**
      * Schedule an event for processing.
      *
-     * @param event Event to schedule
+     * @param event Event in the future to schedule
      * @private
      */
     _schedule: function(event) {
@@ -198,7 +198,7 @@ LogikSim.Backend.Core.prototype = {
     /**
      * Schedule multiple events for processing.
      *
-     * @param events Events to schedule
+     * @param events Events in the future to schedule
      * @private
      */
     _schedule_many: function(events) {

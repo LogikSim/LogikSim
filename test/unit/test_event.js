@@ -1,17 +1,15 @@
 
 describe("A event class", function() {
-    var mk_event = function (when, group, _order) {
-        var ev = new LogikSim.Backend.Event(when, group);
-        ev._order = _order;
-
-        return ev;
-    };
-
     var ev_cmp = LogikSim.Backend.event_cmp;
 
     it("shouldn't have an order by default", function() {
         var ev = new LogikSim.Backend.Event(0,0);
         expect(ev._order).toBeNull();
+    });
+
+    it("shouldn't have future events when processed", function() {
+        var ev = new LogikSim.Backend.Event(0,0);
+        expect(ev.process(false)).toEqual([]);
     });
 
     it("should compare correctly using event_compare", function() {
@@ -35,5 +33,6 @@ describe("A event class", function() {
 
         expect(ev_cmp(ev3, ev1)).toBeGreaterThan(0);
         expect(ev_cmp(ev3, ev0)).toBeGreaterThan(0);
-    })
+    });
+
 });
