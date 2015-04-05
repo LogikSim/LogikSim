@@ -1,0 +1,3 @@
+{
+    "laxbreak": false // Needlessly complains about line-break style. Deprecated anyways.
+}
