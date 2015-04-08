@@ -53,6 +53,58 @@ LogikSim.Backend.Simulation.prototype = {
         return this._post_to_backend("query_simulation_properties");
     },
 
+    create_component: function(guid, additional_properties) {
+        return this._post_to_backend("create_component", {
+            guid: guid,
+            additional_properties: additional_properties
+        });
+    },
+    query_component: function(component_id) {
+        return this._post_to_backend("query_component", {
+            component: component_id
+        });
+    },
+    update_component: function(component_id, properties) {
+        return this._post_to_backend("update_component", {
+            component: component_id,
+            properties: properties
+        });
+    },
+    delete_component: function(element_id) {
+        return this._post_to_backend("delete_component", {
+            component: element_id
+        });
+    },
+
+    connect: function(source_id, source_port, sink_id, sink_port, delay) {
+        return this._post_to_backend("connect", {
+            source_id: source_id,
+            source_port: source_port,
+            sink_id: sink_id,
+            sink_port: sink_port,
+            delay: delay
+        });
+    },
+    disconnect: function(source_id, source_port) {
+        return this._post_to_backend("disconnect", {
+            source_id: source_id,
+            source_port: source_port
+        });
+    },
+
+    schedule_edge: function(component_id, input_port, state, delay) {
+        return this._post_to_backend("edge", {
+            component: component_id,
+            input_port: input_port,
+            state: state,
+            delay: delay
+        });
+    },
+
+    enumerate_templates: function() {
+        return this._post_to_backend("enumerate_templates");
+    },
+
     /**
      * Set a handler function for a specific reply type.
      *

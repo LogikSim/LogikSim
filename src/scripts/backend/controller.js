@@ -22,9 +22,12 @@ LogikSim.Backend = LogikSim.Backend || {};
  * @param logger Optional LogikSim.Logger to use for logging.
  * @constructor
  */
-LogikSim.Backend.Controller = function(core, logger) {
+LogikSim.Backend.Controller = function(core, component_library, logger) {
     this.core = core;
+    this.lib = component_library;
     this.log = typeof logger !== 'undefined' ? logger : LogikSim.Logger("Ctrl");
+
+    this.components = {};
 
     /** ID of the request currently being processed. Used to tag replies. */
     this._current_request_id = null;
@@ -32,10 +35,49 @@ LogikSim.Backend.Controller = function(core, logger) {
     /** If true exceptions from a handler are re-thrown so they crash the backend */
     this._rethrow_exceptions = false;
 
+    var that = this;
+    this.properties = {};
+    Object.defineProperties(this.properties, {
+        simulation_rate: {
+            get: function() { return that.core.simulation_rate; },
+            set: function(v) {
+                if (typeof v !== 'number' || v < 0) {
+                    throw TypeError("Simulation rate must have a value >= 0.0");
+                }
+
+                that.core.simulation_rate = v;
+            },
+            enumerable: true
+        },
+        clock: {
+            get: function() { return that.core._clock; },
+            enumerable: true
+        },
+        scheduled_events: {
+            get: function() { return that.core.scheduled_events; },
+            enumerable: true
+        }
+    });
+
     /** Map of front-end message type to handler function */
     this._message_handler = {
         start: this._on_start,
-        stop: this._on_stop
+        stop: this._on_stop,
+
+        set_simulation_properties: this._on_set_simulation_properties,
+        query_simulation_properties: this._on_query_simulation_properties,
+
+        create_component: this._on_create_component,
+        query_component: this._on_query_component,
+        update_component: this._on_update_component,
+        delete_component: this._on_delete_component,
+
+        connect: this._on_connect,
+        disconnect: this._on_disconnect,
+
+        schedule_edge: this._on_schedule_edge,
+
+        enumerate_templates: this._on_enumerate_templates
     };
 };
 
@@ -116,5 +158,112 @@ LogikSim.Backend.Controller.prototype = {
     _on_stop: function() {
         this.core.quit();
         this._post_to_frontend("stopped");
+    },
+
+    _on_set_simulation_properties: function(message) {
+        var props = message.properties;
+        try {
+            for (var prop in props) {
+                if (!props.hasOwnProperty(prop)) {
+                    continue;
+                }
+
+                try {
+                    if (this.properties.hasProperty(prop) && !this.properties.hasOwnProperty(prop)) {
+                        throw new LogikSim.Backend.BackendError("Setting simulation property '" + prop + "' is not allowed");
+                    }
+
+                    this.properties[prop] = props[prop];
+                }
+                catch (ex) {
+                    this._post_to_frontend('error', {
+                        message: ex.message
+                    });
+
+                    if (this._rethrow_exceptions) {
+                        throw ex;
+                    }
+                }
+            }
+        } finally {
+            this._on_query_simulation_properties();
+        }
+    },
+    _on_query_simulation_properties: function() {
+        this._post_to_frontend("simulation_properties", {
+            properties: JSON.parse(JSON.stringify(this.properties))
+        });
+    },
+
+    _on_create_component: function(message) {
+        var id = message.additional_properties.id;
+        if (id in this.components) {
+            throw new LogikSim.Backend.BackendError(
+                "Failed to instantiate. Already have component instance with id '" + id + "'"
+            );
+        }
+
+        var component = this.lib.instantiate(
+            message.guid,
+            message.parent,
+            message.additional_properties
+        );
+
+        if (!component) {
+            throw new LogikSim.Backend.BackendError("Failed to instantiate '" + message.guid + "'");
+        }
+
+        this.components[id] = component;
+        this._on_query_component({ component: id });
+    },
+    _on_query_component: function(message) {
+        var component = this._get_component(message.component);
+
+        //FIXME: Should actually get properties
+    },
+    _on_update_component: function(message) {
+        var component = this._get_component(message.component);
+
+        //FIXME: Should set the properties
+    },
+    _on_delete_component: function(message) {
+        var component = this._get_component(message.component);
+
+        component.destruct();
+
+        delete this.components[message.component];
+    },
+
+    _on_connect: function(message) {
+        var source = this._get_component(message.source_id);
+        var sink = this._get_component(message.sink_id);
+
+        //TODO: Validate
+        if (!source.connect(message.source_port, sink, message.sink_port, message.delay)) {
+            throw new LogikSim.Backend.BackendError(
+                "Failed to connect '" + message.source_id + "' to '" + message.sink_id + "'"
+            );
+        }
+    },
+    _on_disconnect: function(message) {
+        var component = this._get_component(message.source_id);
+
+        if (!component.disconnect(message.source_port)) {
+            throw new LogikSim.Backend.BackendError(
+                "Failed to disconnect port '" + message.source_port + "' on '" + message.source_id + "'"
+            );
+        }
+    },
+
+    _on_schedule_edge: function(message) {
+
+    },
+
+    _get_component: function(id) {
+        var component = this.components[id];
+        if (!component) {
+            throw new LogikSim.Backend.BackendError("No component with id '" + message.id + "'");
+        }
+        return component;
     }
 };

@@ -3,6 +3,7 @@
 var LogikSim = LogikSim || {};
 LogikSim.Backend = LogikSim.Backend || {};
 
+LogikSim._ = _.noConflict();
 /**
  * Returns a high precision, monotonic timestamp.
  * @function LogikSim.Backend.time

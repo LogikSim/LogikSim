@@ -23,6 +23,13 @@ function mk_test_core() {
     return core;
 }
 
+/**
+ * Creates a LogikSim.Backend.Event
+ * @param when Scheduling time for event
+ * @param group Group the event belongs to (optional)
+ * @param _order Internal order parameter to set (optional)
+ * @return {LogikSim.Backend.Event}
+ */
 function mk_event(when, group, _order) {
     group = typeof group !== 'undefined' ? group : 0;
 
@@ -33,4 +40,32 @@ function mk_event(when, group, _order) {
     }
 
     return ev;
+}
+
+/**
+ * Creates a LogikSim.Backend.Edge
+ * @param when When to schedule the edge
+ * @param component On which component to schedule the edge
+ * @param input_port Input on component the edge is occuring on
+ * @param state State of the input after the edge
+ * @returns {LogikSim.Backend.Edge}
+ */
+function mk_edge(when, component, input_port, state) {
+    return new LogikSim.Backend.Edge(when, component, input_port, state);
+}
+
+/**
+ * Creates a logger for use in testing.
+ *
+ * For now a test logger is a normal logger that only
+ * logs messages of level warning and above.
+ *
+ * @param name Name for the logger (optional)
+ * @param minimum_loglevel Minimum log level for this logger (optional)
+ * @return {LogikSim.Logger}
+ */
+function mk_test_logger(name, minimum_loglevel) {
+    name = typeof name !== 'undefined' ? name : "test";
+    minimum_loglevel = typeof minimum_loglevel !== 'undefined' ? minimum_loglevel : LogikSim.WARN;
+    return new LogikSim.Logger(name, minimum_loglevel);
 }

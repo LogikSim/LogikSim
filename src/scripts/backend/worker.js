@@ -14,11 +14,34 @@ if (!Function.prototype.bind) {
 }
 
 // Import all backend dependencies
-importScripts('utils.js', 'log.js', 'event.js', 'controller.js', 'core.js');
+importScripts(
+    '../../vendor/underscore.js',
+    'utils.js',
+    'log.js',
+    'event.js',
+    'controller.js',
+    'component.js',
+    'component_library.js',
+    'core.js'
+);
 
 var core = new LogikSim.Backend.Core();
-var controller = new LogikSim.Backend.Controller(core);
+var lib = new LogikSim.Backend.ComponentLibrary();
+var controller = new LogikSim.Backend.Controller(core, lib);
 
 self.addEventListener('message', function(event) {
     controller.handle.call(controller, event.data);
 });
+
+// Load component library
+(function () {
+    var request = new XMLHttpRequest();
+    request.onload = function() {
+        var templates = JSON.parse(this.responseText);
+        lib.add_templates(templates); //TODO: Prop to controller -> frontend
+    };
+    //TODO: Error handling
+    //TODO: Figure out if this style of loading makes sense and where the backend should get its paths from
+    request.open("get", "components/component_templates.json");
+    request.send();
+})();
