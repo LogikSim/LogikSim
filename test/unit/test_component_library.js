@@ -37,7 +37,7 @@ describe("A component library", function() {
     it("should be able to instantiate registered types", function() {
         var lib = new LogikSim.Backend.ComponentLibrary(mk_test_logger("lib"));
         expect(lib.add_templates({"my-template": {logic: function() {}}})).toBe(1);
-        var component = lib.instantiate("my-template", 5);
+        var component = lib.instantiate("my-template", 5, mk_parent_dummy());
 
         expect(component.type()).toBe("my-template");
         expect(component.id()).toBe(5);
@@ -52,7 +52,7 @@ describe("A component library", function() {
     xit("should make the type field of the template write protected", function() { // See above
         var lib = new LogikSim.Backend.ComponentLibrary(mk_test_logger("lib"));
         expect(lib.add_templates({'my-template': {logic: function() {}}})).toBe(1);
-        var component = lib.instantiate("my-template");
+        var component = lib.instantiate("my-template", 10, mk_parent_dummy());
         expect(function() { component.props.type = "blub"}).toThrow();
         expect(component.type()).toBe("my-template")
     })

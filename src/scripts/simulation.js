@@ -52,12 +52,16 @@ LogikSim.Backend.Simulation.prototype = {
     query_simulation_properties: function () {
         return this._post_to_backend("query_simulation_properties");
     },
-
     create_component: function(guid, additional_properties) {
-        return this._post_to_backend("create_component", {
-            guid: guid,
-            additional_properties: additional_properties
-        });
+        var id = this._gen_element_uid();
+        return {
+            component_id: id,
+            request_id: this._post_to_backend("create_component", {
+                guid: guid,
+                id: id,
+                additional_properties: additional_properties
+            })
+        };
     },
     query_component: function(component_id) {
         return this._post_to_backend("query_component", {
@@ -151,9 +155,19 @@ LogikSim.Backend.Simulation.prototype = {
     },
     /**
      * @return {number} Guaranteed session unique request id.
+     * @private
      */
     _gen_request_id: function () {
         return this._sent_requests++;
+    },
+    /**
+     * @return {number} Guaranteed simulation unique element id.
+     * For single user an incrementing counter in the interface is just fine. No
+     * need to make them really unique and unwieldy at this point.
+     * @private
+     */
+    _gen_element_uid: function() {
+        return this._created_elements++;
     },
     /**
      * Sends a message to the backend.

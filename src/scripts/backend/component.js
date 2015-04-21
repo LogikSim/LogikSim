@@ -7,7 +7,7 @@ LogikSim.Backend.Component = function(parent, properties) {
     this.props = properties;
 
     this.parent = parent;
-    this.props.parent = parent === null ? null : parent.id();
+    this.props.parent = parent && parent.id ? parent.id() : null;
 
     // Add our own state
     Object.defineProperty(this.props, "id", {
@@ -38,6 +38,8 @@ LogikSim.Backend.Component = function(parent, properties) {
 
     this.inputs_changed = false;
     this.outputs_changed = false;
+
+    this.propagate_self();
 };
 
 
@@ -66,6 +68,13 @@ LogikSim.Backend.Component.prototype = {
         this.props.input_states[input_port] = state;
         this.inputs_changed = true;
     },
+    /**
+     * Called to process one or more previous input or output state changes
+     * on the component.
+     *
+     * @param when Clock cycle the changes belonged to.
+     * @return {Array} Array of events resulting from the.
+     */
     clock: function(when) {
         var events = [];
 
@@ -87,7 +96,11 @@ LogikSim.Backend.Component.prototype = {
         }
 
         if (this.inputs_changed || this.outputs_changed) {
-            //TODO: Propagate state change
+            this.propagate({
+                id: this.id(),
+                input_states: this.props.input_states,
+                output_states: this.props.output_states
+            })
         }
 
         this.inputs_changed = false;
@@ -101,7 +114,51 @@ LogikSim.Backend.Component.prototype = {
 
         return this.props.output_connections[output_port];
     },
-    connect: function(output_port, component, input_port, delay) {
+    /**
+     * Sets a property and propagates its change.
+     *
+     * Property application is best effort. This function throws a list of
+     * exceptions for all properties that could not be applied.
+     *
+     * @param properties Dictionary with property key:value pairs
+     */
+    set_properties: function(properties) {
+        var update = {};
+        var errors = [];
+        var propagate = false;
+
+        for (var prop in properties) {
+            if (!properties.hasOwnProperty(prop)) {
+                continue;
+            }
+
+            try {
+                var value = properties[prop];
+                this.props[prop] = value;
+                update[prop] = value;
+            } catch (ex) {
+                errors.push(ex);
+            }
+
+            propagate = true;
+        }
+
+        if (propagate) {
+            update.id = this.id();
+            this.propagate(update);
+        }
+
+        if (errors.length > 0) {
+            throw errors;
+        }
+    },
+    propagate: function(message) {
+        return this.parent.propagate(message);
+    },
+    propagate_self: function() {
+        return this.propagate(this._convert_for_propagation(this.props));
+    },
+    _connect: function(output_port, component, input_port, delay) {
         if (this.props.output_connections[output_port] !== undefined) {
             // Can't connect twice
             return false;
@@ -120,6 +177,18 @@ LogikSim.Backend.Component.prototype = {
 
         return true;
     },
+    connect: function(output_port, component, input_port, delay) {
+        if(!this._connect(output_port, component, input_port, delay)) {
+            return false;
+        }
+
+        this.propagate({
+            id: this.id(),
+            output_connections: this._convert_for_propagation(this.props.output_connections)
+        });
+
+        return true;
+    },
     connected: function(component, output_port, input_port, state) {
         if (this.props.input_connections[input_port] !== undefined) {
             // Already have something connected on that port
@@ -134,9 +203,14 @@ LogikSim.Backend.Component.prototype = {
         //FIXME: Instead of this hack the connect on 'component' should schedule an edge with proper delay on us.
         this.edge(input_port, state);
 
+        this.propagate({
+            id: this.id(),
+            input_connections: this._convert_for_propagation(this.props.input_connections)
+        });
+
         return true;
     },
-    disconnect: function(output_port) {
+    _disconnect: function(output_port) {
         var connection = this.props.output_connections[output_port];
         if (!connection) {
             // Nothing to do
@@ -151,12 +225,29 @@ LogikSim.Backend.Component.prototype = {
 
         return true;
     },
+    disconnect: function(output_port) {
+        if (!this._disconnect(output_port)) {
+            return false;
+        }
+
+        this.propagate({
+            id: this.id(),
+            output_connections: this._convert_for_propagation(this.props.output_connections)
+        });
+
+        return true;
+    },
     disconnected: function(input_port) {
         if (!this.props.input_connections[input_port]) {
             return false;
         }
 
         this.props.input_connections[input_port] = null;
+
+        this.propagate({
+            id: this.id(),
+            input_connections: this._convert_for_propagation(this.props.input_connections)
+        });
 
         return true;
     },
@@ -178,30 +269,27 @@ LogikSim.Backend.Component.prototype = {
                 continue;
             }
 
-            this.disconnect(output_port);
+            this._disconnect(output_port);
         }
 
-        //FIXME: Propagate our destruction?
+        this.propagate({
+            id: this.id(),
+            type: null
+        });
     },
 
     /**
-     * Converts this objects properties into a JSON string.
-     *
-     * This does not include template properties that weren't
-     * overridden for this instance. Together with the template
-     * this should be sufficient to re-create the component
-     * with identical state. Note that the id and connections
-     * will be lost though.
-     *
-     * @return JSON string describing this instance.
+     * Converts this objects properties for propagation.
+     * @param thing What to convert
+     * @return Simplified deep-copy of thing
      */
-    to_json: function() {
-        return JSON.stringify(this.props, function(key, value) {
+    _convert_for_propagation: function(thing) {
+        return JSON.parse(JSON.stringify(thing, function(key, value) {
             if (value instanceof LogikSim.Backend.Component) {
                 return value.id();
             }
 
             return value;
-        });
+        }));
     }
 };

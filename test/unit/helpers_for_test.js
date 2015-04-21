@@ -55,6 +55,14 @@ function mk_edge(when, component, input_port, state) {
 }
 
 /**
+ * Generates a dummy parent usable for Component instantiation.
+ * @return {{propagate: Object}}
+ */
+function mk_parent_dummy() {
+    return jasmine.createSpyObj("parent", ["propagate"]);
+}
+
+/**
  * Creates a logger for use in testing.
  *
  * For now a test logger is a normal logger that only

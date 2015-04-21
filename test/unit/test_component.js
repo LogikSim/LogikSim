@@ -2,9 +2,11 @@
 
 describe("A circuit component", function() {
     var and;
+    var parent;
 
     beforeEach(function() {
-        and = new LogikSim.Backend.Component(null, {
+        parent = mk_parent_dummy();
+        and = new LogikSim.Backend.Component(parent, {
             id: 3,
             type: "AND",
             logic: function(ins) {
@@ -23,6 +25,31 @@ describe("A circuit component", function() {
     it("should be expose type as well as id", function() {
         expect(and.id()).toBe(3);
         expect(and.type()).toBe("AND");
+    });
+
+    it("should propagate its complete properties on instantiation", function() {
+        expect(parent.propagate).toHaveBeenCalledWith({
+            id: 3,
+            type: "AND",
+            input_count: 3,
+            output_count: 2,
+            parent: null,
+            delay: 1,
+            input_states: [null, null, null],
+            input_connections: [null, null, null],
+            output_states: [null, null],
+            output_connections: [null, null]
+        });
+    });
+
+    it("should propagate changes to properties performed on it", function() {
+        parent.propagate.calls.reset();
+        and.set_properties({ delay: 10 });
+
+        expect(parent.propagate).toHaveBeenCalledWith({
+            id: 3,
+            delay: 10
+        });
     });
 
     it("should properly connect to other components and disconnect from them", function() {

@@ -105,7 +105,6 @@ LogikSim.Backend.ComponentLibrary.prototype = {
     instantiate: function(type, id, parent, custom_properties) {
         //TODO: Do we need to deep-copy custom_properties?
         custom_properties = custom_properties || {};
-        parent = parent || null;
 
         var template = this.component_templates[type];
         if (typeof template === 'undefined') {

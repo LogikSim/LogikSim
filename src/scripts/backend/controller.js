@@ -59,6 +59,14 @@ LogikSim.Backend.Controller = function(core, component_library, logger) {
         }
     });
 
+    this.component_parent = {
+        propagate: function(message) {
+            that._post_to_frontend("update", {
+                props: message
+            });
+        }
+    };
+
     /** Map of front-end message type to handler function */
     this._message_handler = {
         start: this._on_start,
@@ -196,15 +204,15 @@ LogikSim.Backend.Controller.prototype = {
     },
 
     _on_create_component: function(message) {
-        var id = message.additional_properties.id;
-        if (id in this.components) {
+        if (message.id in this.components) {
             throw new LogikSim.Backend.BackendError(
-                "Failed to instantiate. Already have component instance with id '" + id + "'"
+                "Failed to instantiate. Already have component instance with id '" + message.id + "'"
             );
         }
 
         var component = this.lib.instantiate(
             message.guid,
+            message.id,
             message.parent,
             message.additional_properties
         );
@@ -213,18 +221,17 @@ LogikSim.Backend.Controller.prototype = {
             throw new LogikSim.Backend.BackendError("Failed to instantiate '" + message.guid + "'");
         }
 
-        this.components[id] = component;
-        this._on_query_component({ component: id });
+        this.components[message.id] = component;
     },
     _on_query_component: function(message) {
         var component = this._get_component(message.component);
 
-        //FIXME: Should actually get properties
+        component.propagate_self();
     },
     _on_update_component: function(message) {
         var component = this._get_component(message.component);
 
-        //FIXME: Should set the properties
+        component.set_properties(message.properties);
     },
     _on_delete_component: function(message) {
         var component = this._get_component(message.component);
@@ -254,9 +261,16 @@ LogikSim.Backend.Controller.prototype = {
             );
         }
     },
-
     _on_schedule_edge: function(message) {
+        var component = this._get_component(message.component);
 
+        var delay = message.delay || 1;
+        this.core.schedule_edge(new LogikSim.Backend.Edge(
+            this.core.clock + delay,
+            component,
+            message.input_port,
+            message.state
+        ));
     },
 
     _get_component: function(id) {
