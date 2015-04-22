@@ -3,17 +3,18 @@
 var LogikSim = LogikSim || {};
 LogikSim.Backend = LogikSim.Backend || {};
 
-LogikSim.Backend.Simulation = function(base_url, logger) {
+LogikSim.Backend.Simulation = function(base_url, logger, worker) {
     base_url = typeof base_url !== 'undefined' ? base_url : '';
     this.log = typeof logger !== 'undefined' ? logger : new LogikSim.Logger("Backend");
 
-    this.worker = new Worker(base_url + 'backend/worker.js');
+    this.worker = typeof worker !== 'undefined' ? worker : new Worker(base_url + 'backend/worker.js');
 
     this._handlers = {
         error: this._on_error
     };
     this._clock = 0;
     this._sent_requests = 0;
+    this._created_elements = 0;
 
     this.worker.onmessage = this._handle.bind(this);
 };
@@ -97,7 +98,7 @@ LogikSim.Backend.Simulation.prototype = {
     },
 
     schedule_edge: function(component_id, input_port, state, delay) {
-        return this._post_to_backend("edge", {
+        return this._post_to_backend("schedule_edge", {
             component: component_id,
             input_port: input_port,
             state: state,
@@ -115,8 +116,12 @@ LogikSim.Backend.Simulation.prototype = {
      * @param type Message type to register handler for
      * @param handler Handler function to call with message.
      */
-    set_handler: function(type, handler) {
-        this._handlers[type] = handler;
+    set_handler: function(type, handler, ctx) {
+        if (typeof ctx === 'undefined') {
+            this._handlers[type] = handler; // Will have this class as 'this' on call
+        } else {
+            this._handlers[type] = handler.bind(ctx);
+        }
     },
     /**
      * Remove previously set handler for message type.
@@ -149,7 +154,7 @@ LogikSim.Backend.Simulation.prototype = {
             return; // It's fine if we don't have a handler
         }
 
-        if (handler.call(this, handler) === false) {
+        if (handler.call(this, msg) === false) {
             this.log.error("Handling of message of type " + msg.type + " failed: " + msg);
         }
     },

@@ -135,7 +135,7 @@ LogikSim.Backend.Controller.prototype = {
         var message = typeof additional_fields !== 'undefined' ? additional_fields : {};
 
         message.type = message_type;
-        message.clock = this.core._clock; //FIXME: Should use a clock property
+        message.clock = this.core.clock; //FIXME: Should use a clock property
 
         if (this._current_request_id !== null) {
             message.in_reply_to = this._current_request_id;
@@ -213,7 +213,7 @@ LogikSim.Backend.Controller.prototype = {
         var component = this.lib.instantiate(
             message.guid,
             message.id,
-            message.parent,
+            message.parent || this.component_parent,
             message.additional_properties
         );
 
@@ -265,7 +265,7 @@ LogikSim.Backend.Controller.prototype = {
         var component = this._get_component(message.component);
 
         var delay = message.delay || 1;
-        this.core.schedule_edge(new LogikSim.Backend.Edge(
+        this.core.schedule(new LogikSim.Backend.Edge(
             this.core.clock + delay,
             component,
             message.input_port,

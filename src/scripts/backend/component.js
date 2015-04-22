@@ -20,21 +20,21 @@ LogikSim.Backend.Component = function(parent, properties) {
         this.props.delay = 1;
     }
 
-    this.props.input_count = typeof this.props.input_count !== "undefined"
-        ? this.props.input_count
+    this.props.inputs = typeof this.props.inputs !== "undefined"
+        ? this.props.inputs
         : 0;
 
-    this.props.input_states = new Array(this.props.input_count);
-    this.props.input_connections = new Array(this.props.input_count);
+    this.props.input_states = new Array(this.props.inputs);
+    this.props.input_connections = new Array(this.props.inputs);
 
-    this.props.output_count = typeof this.props.output_count !== "undefined"
-        ? this.props.output_count
+    this.props.outputs = typeof this.props.outputs !== "undefined"
+        ? this.props.outputs
         : 0;
 
-    this.props.output_states = new Array(this.props.output_count);
-    this.props.output_connections = new Array(this.props.output_count);
+    this.props.output_states = new Array(this.props.outputs);
+    this.props.output_connections = new Array(this.props.outputs);
 
-    this.last_logic_outputs = new Array(this.props.output_count);
+    this.last_logic_outputs = new Array(this.props.outputs);
 
     this.inputs_changed = false;
     this.outputs_changed = false;
@@ -81,7 +81,7 @@ LogikSim.Backend.Component.prototype = {
         if (this.inputs_changed) {
             var future_outputs = this.props.logic(this.props.input_states);
 
-            for (var output_port = 0; output_port < this.props.output_count; ++output_port) {
+            for (var output_port = 0; output_port < this.props.outputs; ++output_port) {
                 if (future_outputs[output_port] !== this.last_logic_outputs[output_port]) {
                     events.push(new LogikSim.Backend.OutEdge(
                         when + this.props.delay,
@@ -253,7 +253,7 @@ LogikSim.Backend.Component.prototype = {
     },
     destruct: function() {
         // Drop inbound connections
-        for (var input_port = 0; input_port < this.props.input_count; ++input_port) {
+        for (var input_port = 0; input_port < this.props.inputs; ++input_port) {
             var input = this.props.input_connections[input_port];
             if (!input) {
                 continue;
@@ -263,7 +263,7 @@ LogikSim.Backend.Component.prototype = {
         }
 
         // Drop outbound connections
-        for (var output_port = 0; output_port < this.props.output_count; ++output_port) {
+        for (var output_port = 0; output_port < this.props.outputs; ++output_port) {
             var output = this.props.output_connections[output_port];
             if (!output) {
                 continue;

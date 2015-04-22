@@ -19,6 +19,8 @@ importScripts(
     'utils.js',
     'log.js',
     'event.js',
+    'edge.js',
+    'out_edge.js',
     'controller.js',
     'component.js',
     'component_library.js',
@@ -42,6 +44,6 @@ self.addEventListener('message', function(event) {
     };
     //TODO: Error handling
     //TODO: Figure out if this style of loading makes sense and where the backend should get its paths from
-    request.open("get", "components/component_templates.json");
+    request.open("get", "components/component_templates.json", false); // !!! Synchronous
     request.send();
 })();

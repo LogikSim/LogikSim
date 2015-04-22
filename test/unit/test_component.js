@@ -12,8 +12,8 @@ describe("A circuit component", function() {
             logic: function(ins) {
                 return [ins.every(function(s) { return s; }), false];
             },
-            input_count: 3,
-            output_count: 2
+            inputs: 3,
+            outputs: 2
         });
     });
 
@@ -31,8 +31,8 @@ describe("A circuit component", function() {
         expect(parent.propagate).toHaveBeenCalledWith({
             id: 3,
             type: "AND",
-            input_count: 3,
-            output_count: 2,
+            inputs: 3,
+            outputs: 2,
             parent: null,
             delay: 1,
             input_states: [null, null, null],
