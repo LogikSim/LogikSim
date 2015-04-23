@@ -3,6 +3,25 @@
 var LogikSim = LogikSim || {};
 LogikSim.Backend = LogikSim.Backend || {};
 
+/**
+ * Creates a circuit component.
+ *
+ * A component is the basic building block of the logic simulation.
+ * The component has a type specific logic function it uses to
+ * calculate outputs for corresponding inputs applied to it.
+ *
+ * State changes on the component are realized via a clocked two
+ * stage interface. Every cycle input changes for one or more input
+ * changes for the component have to be processed the edge function
+ * has to be called for each of them. For every clock cycle in which
+ * edge calls were performed a corresponding clock call enables the
+ * component to react to these changes in terms of follow-up events
+ * which are scheduled in the core.
+
+ * @param parent Parent element to propagate property changes to.
+ * @param properties Properties to initialize the component with.
+ * @constructor
+ */
 LogikSim.Backend.Component = function(parent, properties) {
     this.props = properties;
 
@@ -108,6 +127,14 @@ LogikSim.Backend.Component.prototype = {
 
         return events;
     },
+    /**
+     * Called by OutEdge processing functions to make outputs take effect.
+     *
+     * @param output_port Port to output on
+     * @param state New state of the output
+     * @return {*} Connection the edge occurred on
+     * @private
+     */
     _out_edge: function(output_port, state) {
         this.props.output_states[output_port] = state;
         this.outputs_changed = true;
@@ -152,31 +179,31 @@ LogikSim.Backend.Component.prototype = {
             throw errors;
         }
     },
+    /**
+     * Propagates messages up child/parent relationships to the front-end.
+     * @param message Message to propagate
+     * @return {*}
+     */
     propagate: function(message) {
         return this.parent.propagate(message);
     },
+    /**
+     * Propagate whole property set of this component to the front-end.
+     *
+     * @return {*}
+     */
     propagate_self: function() {
         return this.propagate(this._convert_for_propagation(this.props));
     },
-    _connect: function(output_port, component, input_port, delay) {
-        if (this.props.output_connections[output_port] !== undefined) {
-            // Can't connect twice
-            return false;
-        }
-
-        if (!component.connected(this, output_port, input_port, this.props.output_states[output_port])) {
-            // Other element rejected connection
-            return false;
-        }
-
-        this.props.output_connections[output_port] = {
-            component: component,
-            input_port: input_port,
-            delay: delay
-        };
-
-        return true;
-    },
+    /**
+     * Connects an output of this component to an input of another one.
+     *
+     * @param output_port Output on this component
+     * @param component Component to connect to
+     * @param input_port Input on component
+     * @param delay Scheduling delay to apply to this connection
+     * @return {boolean}
+     */
     connect: function(output_port, component, input_port, delay) {
         if(!this._connect(output_port, component, input_port, delay)) {
             return false;
@@ -189,8 +216,17 @@ LogikSim.Backend.Component.prototype = {
 
         return true;
     },
+    /**
+     * Called by a connecting components connect function to notify its target.
+     *
+     * @param component Connecting component
+     * @param output_port Output port used for connection
+     * @param input_port Input port on this component that is being connected to
+     * @param state Current state of the output port
+     * @return {boolean} True if connection can be established. False if not (e.g. input already in use).
+     */
     connected: function(component, output_port, input_port, state) {
-        if (this.props.input_connections[input_port] !== undefined) {
+        if (this.props.input_connections[input_port]) {
             // Already have something connected on that port
             return false;
         }
@@ -210,21 +246,12 @@ LogikSim.Backend.Component.prototype = {
 
         return true;
     },
-    _disconnect: function(output_port) {
-        var connection = this.props.output_connections[output_port];
-        if (!connection) {
-            // Nothing to do
-            return false;
-        }
-
-        if (!connection.component.disconnected(connection.input_port)) {
-            return false;
-        }
-
-        this.props.output_connections[output_port] = null;
-
-        return true;
-    },
+    /**
+     * Disconnects an output port of this component from another component.
+     *
+     * @param output_port Output port to disconnect.
+     * @return {boolean} True if disconnected. False if otherwise (e.g. port wasn't connected).
+     */
     disconnect: function(output_port) {
         if (!this._disconnect(output_port)) {
             return false;
@@ -237,6 +264,12 @@ LogikSim.Backend.Component.prototype = {
 
         return true;
     },
+    /**
+     * Called by a disconnecting components disconnect function to notify the involved component.
+     *
+     * @param input_port Input port being disconnected from.
+     * @return {boolean} True if disconnect is acknowledged. False if not (e.g. no connection present).
+     */
     disconnected: function(input_port) {
         if (!this.props.input_connections[input_port]) {
             return false;
@@ -251,6 +284,13 @@ LogikSim.Backend.Component.prototype = {
 
         return true;
     },
+    /**
+     * Removes the component from the simulation.
+     *
+     * This is achieved by disconnecting all incoming and outgoing
+     * connections and then propagating the component as no longer
+     * having a type.
+     */
     destruct: function() {
         // Drop inbound connections
         for (var input_port = 0; input_port < this.props.inputs; ++input_port) {
@@ -277,7 +317,64 @@ LogikSim.Backend.Component.prototype = {
             type: null
         });
     },
+    /**
+     * Connects an output of this component to an input of another one.
+     *
+     * This internal variant will not propagate the connect. The caller
+     * has to ensure that the connect is properly propagated later on.
+     *
+     * @param output_port Output on this component
+     * @param component Component to connect to
+     * @param input_port Input on component
+     * @param delay Scheduling delay to apply to this connection
+     * @return {boolean}
+     * @private
+     */
+    _connect: function(output_port, component, input_port, delay) {
+        if (this.props.output_connections[output_port] !== undefined) {
+            // Can't connect twice
+            return false;
+        }
 
+        if (!component.connected(this, output_port, input_port, this.props.output_states[output_port])) {
+            // Other element rejected connection
+            return false;
+        }
+
+        this.props.output_connections[output_port] = {
+            component: component,
+            input_port: input_port,
+            delay: delay
+        };
+
+        return true;
+    },
+    /**
+     *
+     * Disconnects an output port of this component from another component.
+     *
+     * This internal variant will not propagate the disconnect. The caller
+     * has to ensure that the disconnect is properly propagated later on.
+     *
+     * @param output_port Output port to disconnect.
+     * @return {boolean} True if disconnected. False if otherwise (e.g. port wasn't connected).
+     * @private
+     */
+    _disconnect: function(output_port) {
+        var connection = this.props.output_connections[output_port];
+        if (!connection) {
+            // Nothing to do
+            return false;
+        }
+
+        if (!connection.component.disconnected(connection.input_port)) {
+            return false;
+        }
+
+        this.props.output_connections[output_port] = null;
+
+        return true;
+    },
     /**
      * Converts this objects properties for propagation.
      * @param thing What to convert

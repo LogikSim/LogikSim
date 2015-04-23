@@ -117,7 +117,9 @@ function mk_synchronous_test_simulation(base_path, rethrow_exceptions) {
          * Tells the backend to terminate. We can't actually hard-kill it like we can with web-workers though.
          */
         terminate: function() {
-            core.quit();
+            if (!core._quit) { // Prevent accidental double quits due to semantic mismatch to web-worker.
+                core.quit();
+            }
         },
         /**
          * Override this to handle messages

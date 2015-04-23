@@ -142,7 +142,7 @@ LogikSim.Backend.ComponentLibrary.prototype = {
      * @return List of types
      */
     get_types: function() {
-        return this.component_templates.keys();
+        return Object.keys(this.component_templates);
     },
     /**
      * Returns a type->template map for the given types.
