@@ -1,7 +1,7 @@
 
 describe("A backend core", function() {
     it("should be able to do housekeeping and be terminated", function(done) {
-        var core = new LogikSim.Backend.Core();
+        var core = new LogikSim.Backend.Core(mk_test_logger("core"));
         core.start();
         setTimeout(function () {
             var clock = core.clock;
@@ -16,7 +16,7 @@ describe("A backend core", function() {
     }, 300);
 
     it("should process a series of events over time", function(done) {
-        var core = new LogikSim.Backend.Core();
+        var core = new LogikSim.Backend.Core(mk_test_logger("core"));
         core.start();
 
         var e = mk_event(10);
@@ -47,7 +47,7 @@ describe("A backend core", function() {
     }, 300);
 
     it("should throw an exception if started or stopped twice", function() {
-        var core = new LogikSim.Backend.Core();
+        var core = new LogikSim.Backend.Core(mk_test_logger("core"));
 
         expect(core.quit.bind(core)).toThrowError(LogikSim.Backend.BackendError);
         core.start();
@@ -65,7 +65,7 @@ describe("A backend core", function() {
      */
 
     it("should have _process_next_event advance time infinitely fast in steady state ", function() {
-        var core = mk_test_core();
+        var core = mk_test_core(mk_test_logger("core"));
 
         expect(core.clock).toBe(0);
         expect(core._process_next_event(100)).toBeNull();
@@ -92,7 +92,7 @@ describe("A backend core", function() {
     });
 
     it("should process follow-up events", function() {
-        var core = mk_test_core();
+        var core = mk_test_core(mk_test_logger("core"));
 
         var e = mk_event(2);
         var fe = mk_event(10, 0);

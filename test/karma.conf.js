@@ -18,13 +18,18 @@ module.exports = function(config) {
 
     // list of files / patterns to load in the browser
     files: [
+      // Used vendor dependencies
+      'src/vendor/underscore.js',
+
       // Fixture configuration
       'test/karma-fixture-setup.js',
       'test/unit/*.html',
 
       {pattern: 'src/scripts/backend/worker.js', included: false}, // Web-worker script with entry point
       {pattern: 'src/scripts/render.js', included: false}, // UI with global effects\
+      {pattern: 'src/scripts/**/*.json', included: false},
 
+      'src/scripts/backend/event.js',
       'src/scripts/**/*.js',
 
       // Spec files
@@ -73,7 +78,7 @@ module.exports = function(config) {
 
     // start these browsers
     // available browser launchers: https://npmjs.org/browse/keyword/karma-launcher
-    browsers: ['PhantomJS'],
+    browsers: ['PhantomJS'], //, 'Chrome', 'Firefox'],
 
 
     // Continuous Integration mode

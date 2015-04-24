@@ -7,7 +7,7 @@ LogikSim.Backend = LogikSim.Backend || {};
  * Creates a new event scheduled at a given time.
  *
  * @param when Simulation time to schedule this event to.
- * @param group Integer value used to group events. Events occuring at the
+ * @param group Integer value used to group events. Events occurring at the
  *  same time with the same group are guaranteed to be executed consecutively
  *  with the last one receiving the last_in_group flag during processing.
  * @constructor

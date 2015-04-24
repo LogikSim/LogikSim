@@ -1,0 +1,65 @@
+{
+  "OR": {
+    "name": {
+      "en": "OR",
+      "de": "Oder"
+    },
+    "description": {
+      "en": "Logical OR",
+      "de": "Logisches Oder"
+    },
+    "symbol": {"din": "≤1"},
+    "inputs": 2,
+    "inputs_max": 10,
+    "outputs": 1,
+    "logic": "(function(ins) { return [ins.some(function(s) { return s; })]; })"
+  },
+  "AND": {
+    "name": {
+      "en": "AND",
+      "de": "Und"
+    },
+    "description": {
+      "en": "Logical AND",
+      "de": "Logisches Und"
+    },
+    "symbol": {"din": "&"},
+    "inputs": 2,
+    "inputs_max": 10,
+    "outputs": 1,
+    "logic": "(function(ins) { return [ins.every(function(s) { return s; })]; })"
+  },
+  "XOR": {
+    "name": "XOR",
+    "description": {
+      "en": "Exclusive Or",
+      "de": "Exklusives Oder"
+    },
+    "symbol": {"din": "=1"},
+    "inputs": 2,
+    "inputs_max": 10,
+    "outputs": 1,
+    "logic": "(function(ins) { return [ins.filter(function(s) { return s; }).length % 2]; })"
+  },
+  "9BAA6238-E8C2-4153-A5BA-05E732EC019A": {
+    "name": "Thingamagic",
+    "description": "Pretty useless demo element with a default English only description",
+    "author": "Positive",
+    "contact": "yes@yes.yes",
+    "inputs_min": 1,
+    "inputs_max": 20,
+    "inputs": 5,
+    "outputs": 5,
+    "logic": "(function(ins) { return [true, true, true, true, true]; })"
+  },
+  "6FDD3B3B-F07A-4C51-BA43-17C4D3A4FF31": {
+    "name": "Thingamagic",
+    "predecessor": "9BAA6238-E8C2-4153-A5BA-05E732EC019A",
+    "description": "Grumpy version two of thingamagic",
+    "author": "Bernd The Bread",
+    "contact": "Nope@nope.nope",
+    "inputs": 5,
+    "outputs": 5,
+    "logic": "(function(ins) { return [false, false, false, false, false]; })"
+  }
+}
