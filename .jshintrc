@@ -1,3 +1,12 @@
 {
-    "laxbreak": false // Needlessly complains about line-break style. Deprecated anyways.
+    "laxbreak": true, // Needlessly complains about line-break style. Deprecated anyways.
+    "globalstrict": true, // Imho global strict makes much more sense. Can always change if sth. breaks
+    "browser": true,
+    "worker": true, // For worker.js
+    "devel": true, // Want to use console.log
+    "globals": {
+        "_": false, // Underscore lib
+        "performance": false, // performance.now()
+        "LogikSim": true // Not visible to JSHint in worker.js
+    }
 }

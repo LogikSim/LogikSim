@@ -78,7 +78,7 @@ LogikSim.Backend.make_priority_queue = function(cmp_fu) {
     function BackendError(message) {
         this.name = this.constructor.name;
         this.message = message || 'An unidentified error occurred in the LogikSim backend';
-        this.stack = (new Error).stack;
+        this.stack = (new Error()).stack;
     }
 
     BackendError.prototype = Object.create(Error.prototype);

@@ -43,7 +43,7 @@ LogikSim.Backend.Controller = function(core, component_library, logger) {
             get: function() { return that.core.simulation_rate; },
             set: function(v) {
                 if (typeof v !== 'number' || v < 0) {
-                    throw TypeError("Simulation rate must have a value >= 0.0");
+                    throw new TypeError("Simulation rate must have a value >= 0.0");
                 }
 
                 that.core.simulation_rate = v;

@@ -64,7 +64,7 @@ LogikSim.Backend.ComponentLibrary.prototype = {
             // create our callable logic function.
             if (typeof template.logic === 'string') {
                 // Here be dragons.
-                template.logic = eval(template.logic);
+                template.logic = eval(template.logic); // jshint ignore:line
             } else if (typeof template.logic !== 'function') {
                 this.log.info(template.type + " is missing a valid logic function");
                 continue;

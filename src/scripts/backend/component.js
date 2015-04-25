@@ -119,7 +119,7 @@ LogikSim.Backend.Component.prototype = {
                 id: this.id(),
                 input_states: this.props.input_states,
                 output_states: this.props.output_states
-            })
+            });
         }
 
         this.inputs_changed = false;
