@@ -27,7 +27,6 @@ gulp.task('serve', 'Starts a server and opens the app in the browser', function(
   return gulp.src('src')
     .pipe(webserver({
       livereload: true,
-      directoryListing: true,
       open: true
     }));
 });
