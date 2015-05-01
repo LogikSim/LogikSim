@@ -13,6 +13,7 @@ describe("A circuit component", function() {
                 return [ins.every(function(s) { return s; }), false];
             },
             inputs: 3,
+            inputs_max: 10,
             outputs: 2
         });
     });
@@ -32,7 +33,11 @@ describe("A circuit component", function() {
             id: 3,
             type: "AND",
             inputs: 3,
+            inputs_min: 3,
+            inputs_max: 10,
             outputs: 2,
+            outputs_min: 2,
+            outputs_max: 2,
             parent: null,
             delay: 1,
             input_states: [null, null, null],
@@ -134,7 +139,8 @@ describe("A circuit component", function() {
 
         core.schedule_many([
             mk_edge(0, and, 0, true),
-            mk_edge(0, and, 1, true)
+            mk_edge(0, and, 1, true),
+            mk_edge(0, and, 2, true)
         ]);
 
         expect(core.test_loop_until_stable_or_time(0)).toBe(0);

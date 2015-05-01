@@ -26,34 +26,128 @@ LogikSim.Backend.Component = function(parent, properties) {
     this.props = properties;
 
     this.parent = parent;
-    this.props.parent = parent && parent.id ? parent.id() : null;
+
+    //TODO: Do we want to do parameter validation here? Should we even bother?
+    var inputs = this.props.inputs | 0;
+
+    this.inputs_max = typeof this.props.inputs_max !== 'undefined' ?
+    this.props.inputs_max | 0 :
+        inputs;
+
+    this.inputs_min = typeof this.props.inputs_min !== 'undefined' ?
+    this.props.inputs_min | 0:
+        inputs;
+
+    this.inputs = 0;
+    this.props.input_connections = [];
+    this.props.input_states = [];
+
+    var outputs = this.props.outputs | 0;
+
+    this.outputs_max = typeof this.props.outputs_max !== 'undefined' ?
+        this.props.outputs_max :
+        outputs;
+
+    this.outputs_min = typeof this.props.outputs_min !== 'undefined' ?
+        this.props.outputs_min :
+        outputs;
+
+    this.outputs = 0;
+    this.props.output_connections = [];
+    this.props.output_states = [];
+    this.last_logic_outputs = [];
 
     // Add our own state
-    Object.defineProperty(this.props, "id", {
-        value: this.props.id, // must be >0, see OutEdge
-        writable: false,
-        enumerable: true
-    });
-
     if (!this.props.delay) {
         this.props.delay = 1;
     }
 
-    this.props.inputs = typeof this.props.inputs !== "undefined"
-        ? this.props.inputs
-        : 0;
+    var that = this;
+    Object.defineProperties(this.props, {
+        id: {
+            value: this.props.id, // must be >0, see OutEdge
+            writable: false,
+            enumerable: true
+        },
 
-    this.props.input_states = new Array(this.props.inputs);
-    this.props.input_connections = new Array(this.props.inputs);
+        parent: {
+            get: function() {
+                return  that.parent && that.parent.id ? that.parent.id() : null;
+            },
+            enumerable: true
+        },
 
-    this.props.outputs = typeof this.props.outputs !== "undefined"
-        ? this.props.outputs
-        : 0;
+        inputs: {
+            get: function() { return that.inputs; },
+            set: this._adjust_input_count,
+            enumerable: true
+        },
+        inputs_max: {
+            get: function() { return that.inputs_max; },
+            set: function(c) {
+                if (typeof c !== 'Number' || c !== (c | 0) || c < 0) {
+                    throw "Input maximum can only be a positive integer";
+                } else if (c < that.inputs_min) {
+                    throw "Cannot set input maximum below minimum";
+                }
 
-    this.props.output_states = new Array(this.props.outputs);
-    this.props.output_connections = new Array(this.props.outputs);
+                that.inputs_max = c;
+            },
+            enumerable: true
+        },
+        inputs_min: {
+            get: function() { return that.inputs_min; },
+            set: function(c) {
+                if (typeof c !== 'Number' || c !== (c | 0) || c < 0) {
+                    throw "Input minimum can only be a positive integer";
+                } else if (c > that.inputs_max) {
+                    throw "Cannot set input minimum above maximum";
+                }
+                that.inputs_min = c;
+            },
+            enumerable: true
+        },
 
-    this.last_logic_outputs = new Array(this.props.outputs);
+        outputs: {
+            get: function() { return that.outputs; },
+            set:  this._adjust_output_count,
+            enumerable: true
+        },
+        outputs_max: {
+            get: function() { return that.outputs_max; },
+            set: function(c) {
+                if (typeof c !== 'Number' || c !== (c | 0) || c < 0) {
+                    throw "Output maximum can only be a positive integer";
+                } else if (c < that.outputs_min) {
+                    throw "Cannot set output maximum below minimum";
+                }
+
+                that.outputs_max = c;
+            },
+            enumerable: true
+        },
+        outputs_min: {
+            get: function() { return that.outputs_min; },
+            set: function(c) {
+                if (typeof c !== 'Number' || c !== (c | 0) || c < 0) {
+                    throw "Output maximum can only be a positive integer";
+                } else if (c > that.outputs_max) {
+                    throw "Cannot set output minimum above maximum";
+                }
+                that.outputs_min = c;
+            },
+            enumerable: true
+        }
+    });
+
+    this._adjust_input_count(inputs, true);
+    this._adjust_output_count(outputs, true);
+
+    // Some properties have setters and handle their own propagation
+    this.self_propagating_prop = {
+        inputs: true,
+        outputs: true
+    };
 
     this.inputs_changed = false;
     this.outputs_changed = false;
@@ -84,6 +178,9 @@ LogikSim.Backend.Component.prototype = {
      * @param state New state for port.
      */
     edge: function(input_port, state) {
+        if (input_port > this.inputs - 1 || input_port < 0) {
+            return;
+        }
         this.props.input_states[input_port] = state;
         this.inputs_changed = true;
     },
@@ -98,7 +195,7 @@ LogikSim.Backend.Component.prototype = {
         var events = [];
 
         if (this.inputs_changed) {
-            var future_outputs = this.props.logic(this.props.input_states);
+            var future_outputs = this.props.logic(this.props.input_states, this.props.outputs);
 
             for (var output_port = 0; output_port < this.props.outputs; ++output_port) {
                 if (future_outputs[output_port] !== this.last_logic_outputs[output_port]) {
@@ -136,6 +233,10 @@ LogikSim.Backend.Component.prototype = {
      * @private
      */
     _out_edge: function(output_port, state) {
+        if (output_port > this.outputs - 1 || output_port < 0) {
+            return;
+        }
+
         this.props.output_states[output_port] = state;
         this.outputs_changed = true;
 
@@ -162,7 +263,9 @@ LogikSim.Backend.Component.prototype = {
             try {
                 var value = properties[prop];
                 this.props[prop] = value;
-                update[prop] = value;
+                if (!this.self_propagating_prop[prop]) {
+                    update[prop] = value;
+                }
             } catch (ex) {
                 errors.push(ex);
             }
@@ -388,5 +491,83 @@ LogikSim.Backend.Component.prototype = {
 
             return value;
         }));
+    },
+    _adjust_input_count: function(new_count, no_propagate) {
+        // Clamp value
+        new_count = Math.max(Math.min(new_count | 0, this.props.inputs_max), this.props.inputs_min);
+
+        // Adjust ports
+        var delta = new_count - this.inputs;
+
+        if (delta < 0) {
+            while (this.inputs != new_count) {
+                var connection = this.props.input_connections.pop();
+                if (connection) {
+                    connection.component.disconnect(connection.input_port);
+                }
+
+                this.props.input_states.pop();
+
+                --this.inputs;
+            }
+        } else if (delta > 0) {
+            while (this.inputs != new_count) {
+                this.props.input_connections.push(undefined);
+                this.props.input_states.push(undefined);
+
+                ++this.inputs;
+            }
+        } else {
+            // Nothing to do
+            return;
+        }
+
+        this.inputs_changed = true;
+
+        if (!no_propagate) {
+            this.propagate({
+                id: this.id(),
+                input_connections: this._convert_for_propagation(this.props.input_connections),
+                input_states: this.props.input_states
+            });
+        }
+    },
+    _adjust_output_count: function(new_count, no_propagate) {
+        // Clamp value
+        new_count = Math.max(Math.min(new_count | 0, this.props.outputs_max), this.props.outputs_min);
+
+        // Adjust ports
+        var delta = new_count - this.outputs;
+
+        if (delta < 0) {
+            while (this.outputs != new_count) {
+                this._disconnect(this.outputs - 1);
+
+                this.props.output_connections.pop();
+                this.props.output_states.pop();
+                this.last_logic_outputs.pop();
+
+                --this.outputs;
+            }
+        } else if (delta > 0) {
+            while (this.outputs != new_count) {
+                this.props.output_connections.push(undefined);
+                this.props.output_states.push(undefined);
+                this.last_logic_outputs.push(undefined);
+
+                ++this.outputs;
+            }
+        } else {
+            // Nothing to do
+            return;
+        }
+
+        if (!no_propagate) {
+            this.propagate({
+                id: this.id(),
+                output_connections: this._convert_for_propagation(this.props.output_connections),
+                output_states: this.props.output_states
+            });
+        }
     }
 };

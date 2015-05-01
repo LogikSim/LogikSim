@@ -41,6 +41,12 @@
     "outputs": 1,
     "logic": "(function(ins) { return [ins.filter(function(s) { return s; }).length % 2]; })"
   },
+  "Interconnect": {
+    "inputs": 1,
+    "outputs": 0,
+    "outputs_max": 100000,
+    "logic": "(function(ins, num_outs) { return Array(num_outs).map(function() { return ins[0]; }); })"
+  },
   "9BAA6238-E8C2-4153-A5BA-05E732EC019A": {
     "name": "Thingamagic",
     "description": "Pretty useless demo element with a default English only description",
