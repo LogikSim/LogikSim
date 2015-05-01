@@ -1,11 +1,11 @@
-﻿
+﻿"use strict";
 //
 // scene
 //
 
-function P(x, y) {
+function p(x, y) {
     return { x: x, y: y };
-};
+}
 
 var scene_data = {
     scene_width: 30, // scene width in scene coordinates
@@ -15,11 +15,11 @@ var scene_data = {
         { type: "and", x: 10, y: 4 },
         { type: "or", x: 10, y: 8 },
         { type: "xor", x: 16, y: 6 },
-        { type: "interconnect", tree: [P(5, 4), P(7, 4), [P(10, 4)], [P(7, 8), P(10, 8)]] },
-        { type: "interconnect", tree: [P(5, 6), P(8, 6), [P(10, 6)], [P(8, 10), P(10, 10)]] },
-        { type: "interconnect", tree: [P(12, 5), P(14, 5), P(14, 6), P(16, 6)] },
-        { type: "interconnect", tree: [P(12, 9), P(14, 9), P(14, 8), P(16, 8)] },
-        { type: "interconnect", tree: [P(18, 7), P(23, 7)] },
+        { type: "interconnect", tree: [p(5, 4), p(7, 4), [p(10, 4)], [p(7, 8), p(10, 8)]] },
+        { type: "interconnect", tree: [p(5, 6), p(8, 6), [p(10, 6)], [p(8, 10), p(10, 10)]] },
+        { type: "interconnect", tree: [p(12, 5), p(14, 5), p(14, 6), p(16, 6)] },
+        { type: "interconnect", tree: [p(12, 9), p(14, 9), p(14, 8), p(16, 8)] },
+        { type: "interconnect", tree: [p(18, 7), p(23, 7)] }
     ]
 };
 
@@ -37,9 +37,9 @@ var scene = d3.select(".scene")
     .attr("height", height);
 
 scene = scene.append("g")
-    .attr("transform", function (d, i) {
+    .attr("transform", function () {
         return "translate(0.5, 0.55)";
-    })
+    });
 
 
 
@@ -48,8 +48,10 @@ scene = scene.append("g")
 //
 
 var grid_group = scene.append("g");
-for (var i = 0; i <= scene_data.scene_height; i++) {
-    var line_class = i  % 5 === 0 ? "grid-major" : "grid-minor";
+var line_class;
+var i;
+for (i = 0; i <= scene_data.scene_height; i++) {
+    line_class = i  % 5 === 0 ? "grid-major" : "grid-minor";
     grid_group.append("line")
         .attr("class", line_class)
         .attr("x1", to_grid(0))
@@ -57,8 +59,9 @@ for (var i = 0; i <= scene_data.scene_height; i++) {
         .attr("y1", to_grid(i))
         .attr("y2", to_grid(i));
 }
-for (var i = 0; i <= scene_data.scene_width; i++) {
-    var line_class = i % 5 === 0 ? "grid-major" : "grid-minor";
+
+for (i = 0; i <= scene_data.scene_width; i++) {
+    line_class = i % 5 === 0 ? "grid-major" : "grid-minor";
     grid_group.append("line")
         .attr("class", line_class)
         .attr("x1", to_grid(i))
@@ -116,8 +119,8 @@ function Interconnect(data) {
 
 Array.prototype.extend = function (other_array) {
     /* you should include a test to check whether other_array really is an array */
-    other_array.forEach(function (v) { this.push(v) }, this);
-}
+    other_array.forEach(function (v) { this.push(v); }, this);
+};
 
 Interconnect.prototype.tree_to_paths = function(tree) {
     function p_to_str(p) {
@@ -135,7 +138,7 @@ Interconnect.prototype.tree_to_paths = function(tree) {
                 paths.extend(iter_tree(item, last_node));
             } else {
                 var str_p = p_to_str(item);
-                if (last_node == null) {
+                if (last_node === null) {
                     path += "M " + str_p;
                 } else {
                     path += " L " + str_p;
@@ -143,11 +146,11 @@ Interconnect.prototype.tree_to_paths = function(tree) {
                 last_node = item;
             }
         }
-        paths.push(path)
+        paths.push(path);
         return paths;
     }
     return iter_tree(tree, null);
-}
+};
 
 Interconnect.prototype.tree_to_indicators = function (tree) {
     function iter_tree(tree, last_node) {
@@ -168,16 +171,16 @@ Interconnect.prototype.tree_to_indicators = function (tree) {
         return indicators;
     }
     return iter_tree(tree, null);
-}
+};
 
 var type_map = {
     and: AndItem,
     or: OrItem,
     xor: XorItem,
-    interconnect: Interconnect,
-}
+    interconnect: Interconnect
+};
 
-items = [];
+var items = [];
 scene_data.items.forEach(function (item) {
     items.push(new type_map[item.type](item));
 });
@@ -187,11 +190,11 @@ scene_data.items.forEach(function (item) {
 var logicitems = scene.selectAll("g.item")
     .data(items)
     .enter().append("g")
-    .attr("transform", function (d, i) {
+    .attr("transform", function (d) {
         return "translate(" +
             to_grid(d.x) + "," + to_grid(d.y) + ")";
     })
-    .attr("class", function (d, i) {
+    .attr("class", function (d) {
         return d.types;
     });
 
@@ -212,7 +215,7 @@ baseitems.append("rect")
     .attr("height", to_grid(2 + 2 * overlapp));
 
 //input connector
-for (var i = 0; i < 3; ++i) {
+for (i = 0; i < 3; ++i) {
     baseitems.append("line")
         .attr("class", "logic")
         .attr("x1", to_grid(-0.5))
@@ -234,7 +237,7 @@ baseitems.append("text")
     .attr("class", "logic")
     .attr("x", to_grid(1))
     .attr("y", to_grid(1))
-    .text(function (d, i) {
+    .text(function (d) {
         return d.text;
     });
 
@@ -244,21 +247,21 @@ baseitems.append("text")
 // draw paths
 scene.selectAll("g.interconnect")
     .selectAll("g")
-    .data(function (d) { return d.paths })
+    .data(function (d) { return d.paths; })
     .enter()
     .append("path")
     .attr("class", "interconnect")
-    .attr("d", function (d) { return d });
+    .attr("d", function (d) { return d; });
 
 // draw edge indicators
 var radius = 0.27;
 scene.selectAll("g.interconnect")
     .selectAll("g")
-    .data(function (d) { return d.indicators })
+    .data(function (d) { return d.indicators; })
     .enter()
     .append("rect")
     .attr("class", "interconnect")
-    .attr("x", function (d) { return to_grid(d.x - radius) })
-    .attr("y", function (d) { return to_grid(d.y - radius) })
+    .attr("x", function (d) { return to_grid(d.x - radius); })
+    .attr("y", function (d) { return to_grid(d.y - radius); })
     .attr("width", to_grid(2 * radius))
     .attr("height", to_grid(2 * radius));

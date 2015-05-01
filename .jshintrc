@@ -6,6 +6,7 @@
     "devel": true, // Want to use console.log
     "globals": {
         "_": false, // Underscore lib
+        "d3": false, // D3 library
         "performance": false, // performance.now()
         "LogikSim": true // Not visible to JSHint in worker.js
     }
