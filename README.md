@@ -39,5 +39,19 @@ This will lead the path to a formalized instruction set and memory
 sub-systems. This final step will bridge the gap to software programming
 and make you grasp how today processors operate on a fundamental level.
 
-
-
+### How to build LogikSim ###
+If you want to contribute to LogikSim as a developer you will want to be
+able to build LogikSim locally. LogikSim uses [*npm*](https://www.npmjs.com/) to manage development
+dependencies as well as [*gulp*](http://gulpjs.com/) as a build tool. As such all you need to get
+started is *npm* installed on your system. After cloning our repository enter
+it with a console and use
+```bash
+npm install
+npm install --global gulp
+```
+To pull in all development dependencies and to install the *gulp* build tool to
+your system. After that you can use
+```bash
+gulp help
+```
+to figure out which commands are available.

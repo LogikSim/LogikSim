@@ -3,7 +3,7 @@ var gulp = require('gulp-help')(require('gulp'));
 var karma = require('karma').server;
 var webserver = require('gulp-webserver');
 
-gulp.task('test', 'Run test once and exit', function (done) {
+gulp.task('test', 'Run tests once and exit', function (done) {
   karma.start({
     configFile: __dirname + '/test/karma.conf.js',
     singleRun: true
