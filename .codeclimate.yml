@@ -1,0 +1,7 @@
+languages:
+  JavaScript: true
+
+exclude_paths:
+  - src/vendor/**/* # Exclude all vendor files
+  - test/**/*
+  - gulpfile.js
