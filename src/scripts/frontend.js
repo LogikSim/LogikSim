@@ -165,7 +165,7 @@ LogikSim.Frontend.Scene = function (scene_id, scene_data) {
         .attr("class", "interconnect trigger")
         .attr("cx", function (d) { return to_grid(d.x); })
         .attr("cy", function (d) { return to_grid(d.y); })
-        .attr("r", function (d) { return to_grid(0.5); })
+        .attr("r", function (d) { return to_grid(1); })
         .on("click", function (d, i) { d.on_trigger(d, this); })
 
 
