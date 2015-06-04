@@ -216,6 +216,10 @@ function do_test_simulation_with(description, simulation_factory) {
         }, 100);
 
         it("should correctly simulate a compound half-adder", function(done) {
+            simulation.set_simulation_properties({
+                simulation_rate: 10
+            });
+
             var x = simulation.create_component("Interconnect").component_id;
             var y = simulation.create_component("Interconnect").component_id;
             var s = simulation.create_component("Interconnect").component_id;
@@ -232,22 +236,54 @@ function do_test_simulation_with(description, simulation_factory) {
             simulation.connect(xor, 0, s, 0);
             simulation.connect(and, 0, c, 0);
 
+            function delay_for_step(index) {
+                return (index * 50) || 1;
+            }
+
             var truth_table = [
-                {x:0, y:0, c:0, s:0, after: 1},
-                {x:0, y:1, c:0, s:1, after: 10},
-                {x:1, y:0, c:0, s:1, after: 20},
-                {x:1, y:1, c:1, s:0, after: 30}
+                // Standard truth table
+                {x: 0, y: 0, c: 0, s: 0},
+                {x: 0, y: 1, c: 0, s: 1},
+                {x: 1, y: 0, c: 0, s: 1},
+                {x: 1, y: 1, c: 1, s: 0},
+                {x: 1, y: 0, c: 0, s: 1},
+                {x: 0, y: 1, c: 0, s: 1},
+
+                // Additional shuffled entries from the table
+                { x: 1, y: 1, c: 1, s: 0 },
+                { x: 1, y: 0, c: 0, s: 1 },
+                { x: 1, y: 0, c: 0, s: 1 },
+                { x: 0, y: 1, c: 0, s: 1 },
+                { x: 0, y: 0, c: 0, s: 0 },
+                { x: 1, y: 0, c: 0, s: 1 },
+                { x: 0, y: 1, c: 0, s: 1 },
+                { x: 1, y: 0, c: 0, s: 1 },
+                { x: 1, y: 0, c: 0, s: 1 },
+                { x: 0, y: 0, c: 0, s: 0 },
+                { x: 0, y: 1, c: 0, s: 1 },
+                { x: 0, y: 1, c: 0, s: 1 },
+                { x: 0, y: 0, c: 0, s: 0 },
+                { x: 1, y: 0, c: 0, s: 1 },
+                { x: 1, y: 1, c: 1, s: 0 },
+                { x: 0, y: 1, c: 0, s: 1 },
+                { x: 0, y: 1, c: 0, s: 1 },
+                { x: 1, y: 1, c: 1, s: 0 },
+
+                // Last entry _must_ cause change messages for proper termination of this test
+                {x: 0, y: 0, c: 0, s: 0}
             ];
 
             for (var i = 0; i < truth_table.length; ++i) {
                 var entry = truth_table[i];
 
-                simulation.schedule_edge(x, 0, entry.x, entry.after);
-                simulation.schedule_edge(y, 0, entry.y, entry.after);
+                simulation.schedule_edge(x, 0, entry.x, delay_for_step(i));
+                simulation.schedule_edge(y, 0, entry.y, delay_for_step(i));
             }
 
             var current_step = 0;
             var last_seen = {};
+            var last_equal = false;
+            var updates_for_this_entry = 0;
 
             simulation.set_handler('stopped', function(msg) {
                 expect(current_step).toEqual(truth_table.length);
@@ -262,7 +298,7 @@ function do_test_simulation_with(description, simulation_factory) {
             });
 
             simulation.set_handler("update", function(msg) {
-                if (msg.clock > truth_table[truth_table.length - 1].after + 10) {
+                if (msg.clock >= delay_for_step(truth_table.length)) {
                     console.log("Simulation time is above expected");
                     console.log(msg);
                     expect(true).toBeFalsy();
@@ -306,19 +342,47 @@ function do_test_simulation_with(description, simulation_factory) {
                         return;
                 }
 
+                //console.log(msg.clock + ": " + JSON.stringify(last_seen));
+
+                if (msg.clock < delay_for_step(current_step)) {
+                    // Stepped to early
+                    --current_step;
+                } else if (msg.clock >= delay_for_step(current_step + 1)) {
+                    if (!last_equal && updates_for_this_entry == 0) {
+                        console.log("No valid solution reached for " + current_step);
+                        console.log("  last equal: " + last_equal + ", updates: " + updates_for_this_entry);
+                        expect(true).toBeFalsy();
+                    }
+
+                    ++current_step;
+                }
+
                 var truth = truth_table[current_step];
-                if (msg.clock > truth.after
+                if (msg.clock >= delay_for_step(current_step)
                     && last_seen.x == truth.x
                     && last_seen.y == truth.y
                     && last_seen.s == truth.s
                     && last_seen.c == truth.c) {
 
+                    //console.log(current_step + "/" + (truth_table.length - 1) + " done");
+
                     ++current_step;
+                    updates_for_this_entry = 0;
 
                     if (current_step >= truth_table.length) {
                         simulation.stop();
                     }
+
+                    truth = truth_table[current_step];
+                    last_equal = (last_seen.x == truth.x
+                                    && last_seen.y == truth.y
+                                    && last_seen.s == truth.s
+                                    && last_seen.c == truth.c);
+
+                    //console.log("Next > " + delay_for_step(current_step) + ": " + JSON.stringify(truth_table[current_step]));
                 }
+
+                ++updates_for_this_entry;
             });
 
             simulation.start();
@@ -329,11 +393,11 @@ function do_test_simulation_with(description, simulation_factory) {
 
 // Most of the tests of backend with or without web-worker should be identical so
 // we handle them like this to not have to copy and paste around all the time.
-
+/*
 do_test_simulation_with("A simulation with web-work backend", function() {
     return new LogikSim.Backend.Simulation('base/src/scripts/');
 });
-
+*/
 do_test_simulation_with("A test simulation _without_ web-worker backend", function() {
     return mk_synchronous_test_simulation('base/src/scripts/');
 });
