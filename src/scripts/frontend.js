@@ -20,9 +20,9 @@ LogikSim.Frontend.Scene = function (scene_id, scene_data) {
 
     // setup simulation backend
 
-    var simulation = new LogikSim.Backend.Simulation('scripts/');
+    this.simulation = new LogikSim.Backend.Simulation('scripts/');
 
-    simulation.set_handler('update', this.backend_handler.bind(this));
+    this.simulation.set_handler('update', this.backend_handler.bind(this));
 
     // create components
 
@@ -34,7 +34,7 @@ LogikSim.Frontend.Scene = function (scene_id, scene_data) {
     this.backend_id_of_frontend_id = {}; // id translation
     for (i = 0; i < this.scene_data.items.length; i++) {
         var item = this.scene_data.items[i];
-        var backend_id = simulation.create_component(item.type).component_id;
+        var backend_id = this.simulation.create_component(item.type, { inputs: 3 }).component_id;
         var frontend_item = new type_map[item.type](this, item, backend_id);
         this.items[backend_id] = frontend_item;
         frontend_items.push(frontend_item)
@@ -48,7 +48,7 @@ LogikSim.Frontend.Scene = function (scene_id, scene_data) {
         if (this.items.hasOwnProperty(backend_id)) {
             var item = this.items[backend_id];
             if (item instanceof LogikSim.Frontend.Interconnect) {
-                item.connect(simulation, this.backend_id_of_frontend_id);
+                item.connect(this.backend_id_of_frontend_id);
             }
         }
     }
@@ -131,6 +131,18 @@ LogikSim.Frontend.Scene = function (scene_id, scene_data) {
         .attr("width", to_grid(2 * radius))
         .attr("height", to_grid(2 * radius));
 
+    // draw trigger points
+    this.scene.selectAll("g.interconnect")
+        .selectAll("g")
+        .data(function (d) { return d.triggers; })
+        .enter()
+        .append("circle")
+        .attr("class", "interconnect trigger")
+        .attr("cx", function (d) { return to_grid(d.x); })
+        .attr("cy", function (d) { return to_grid(d.y); })
+        .attr("r", function (d) { return to_grid(0.5); })
+        .on("click", function(d, i) { d.on_trigger(d, this); })
+
     // register top DOM elements in javascript objects
     this.scene.selectAll("g.item")
         .each(function (d, i) {
@@ -138,10 +150,7 @@ LogikSim.Frontend.Scene = function (scene_id, scene_data) {
         });
 
     // start simulation
-    simulation.start();
-
-    //console.log(this.items);
-    simulation.schedule_edge(4, 0, 1, 0);
+    this.simulation.start();
 }
 
 LogikSim.Frontend.Scene.prototype = {
@@ -293,6 +302,8 @@ LogikSim.Frontend.Interconnect = function (scene, data, backend_id) {
     this.tree = data.tree;
     this.paths = this.tree_to_paths(data.tree);
     this.indicators = this.tree_to_indicators(data.tree);
+    this.triggers = this.tree_to_triggers(data.tree);
+    console.log(this.triggers);
 }
 
 LogikSim.Frontend.Interconnect.prototype = Object.create(LogikSim.Frontend.Item.prototype);
@@ -351,6 +362,34 @@ LogikSim.Frontend.Interconnect.prototype.tree_to_indicators = function (tree) {
     return iter_tree(tree, null);
 }
 
+LogikSim.Frontend.Interconnect.prototype._iter_tree_to_triggers = function (tree) {
+    var triggers = [];
+    for (var i = 0; i < tree.length; i++) {
+        var item = tree[i];
+        if (item instanceof Array) {
+            triggers.extend(this._iter_tree_to_triggers(item));
+        } else {
+            if (item.type === "trigger") {
+                triggers.push(item);
+                // create trigger function
+                item.last_state = false;
+                item.on_trigger = function (data, dom) {
+                    console.log(this.scene);
+                    var new_state = !data.last_state;
+                    this.scene.simulation.schedule_edge(this.backend_id, 0, new_state, 0);
+                    data.last_state = new_state;
+                }.bind(this);
+            }
+        }
+    }
+    return triggers;
+}
+
+LogikSim.Frontend.Interconnect.prototype.tree_to_triggers = function (tree) {
+    
+    return this._iter_tree_to_triggers(tree);
+}
+
 /**
  * Setup all connections in the backend based on path definition.
  * @param self_id backend id of the interconnect itself
@@ -358,9 +397,10 @@ LogikSim.Frontend.Interconnect.prototype.tree_to_indicators = function (tree) {
  * @param backend_id_of_frontend_id translation dict to convert frontend ids
  *            to backend ids
  */
-LogikSim.Frontend.Interconnect.prototype.connect = function (simulation, backend_id_of_frontend_id) {
+LogikSim.Frontend.Interconnect.prototype.connect = function (backend_id_of_frontend_id) {
     var last_id = 0;
     var my_id = this.backend_id;
+    var simulation = this.scene.simulation;
     function iter_tree(tree) {
         for (var i = 0; i < tree.length; i++) {
             var item = tree[i];
@@ -383,12 +423,9 @@ LogikSim.Frontend.Interconnect.prototype.connect = function (simulation, backend
 }
 
 LogikSim.Frontend.Interconnect.prototype.update = function (props, clock) {
-    //console.log(props);
     if (props.input_states !== undefined) {
         d3.select(this.dom).selectAll("*").classed("activated", props.input_states[0]);
-        console.log(props.input_states[0]);
     }
-    //d3.select(this.dom).selectAll("*").classed("activated", true);
 }
 
 // Type Map

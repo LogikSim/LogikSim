@@ -52,11 +52,11 @@
     stroke: black;
 }
 
-.scene path.interconnect.activated{
+.scene path.interconnect.activated {
     stroke: red;
 }
 
-.scene rect.interconnect.activated{
+.scene rect.interconnect.activated {
     stroke: red;
     fill: red;
 }
