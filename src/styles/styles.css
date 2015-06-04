@@ -61,6 +61,10 @@
     fill: red;
 }
 
+.scene circle.interconnect.trigger {
+    opacity: 0;
+}
+
 /*body {
     margin: 0;
     transform: translate(0.5px, 0.5px);
