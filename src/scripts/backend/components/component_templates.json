@@ -29,6 +29,21 @@
     "outputs": 1,
     "logic": "(function(ins) { return [ins.every(function(s) { return s; })]; })"
   },
+  "NAND": {
+    "name": {
+      "en": "NAND",
+      "de": "NUnd"
+    },
+    "description": {
+      "en": "Logical negated AND",
+      "de": "Logisches negiertes Und"
+    },
+    "symbol": {"din": "!&"},
+    "inputs": 2,
+    "inputs_max": 10,
+    "outputs": 1,
+    "logic": "(function(ins) { return [!ins.every(function(s) { return s; })]; })"
+  },
   "XOR": {
     "name": "XOR",
     "description": {
