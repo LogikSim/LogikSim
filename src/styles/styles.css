@@ -10,6 +10,11 @@
 
 /* basic items */
 
+.scene path.logic {
+    stroke: black;
+    fill: #FFFF7F;
+}
+
 .scene rect.logic {
     fill: #FFFF7F;
     stroke: black;
@@ -19,6 +24,11 @@
     font: 12px sans-serif;
     text-anchor: middle;
     alignment-baseline: central;
+}
+
+.scene circle.logic {
+    stroke: black;
+    fill: white;
 }
 
 /* background lines */

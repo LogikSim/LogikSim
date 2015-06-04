@@ -72,32 +72,43 @@ LogikSim.Frontend.Scene = function (scene_id, scene_data) {
 
     var overlapp = 0.37;
 
-    // rect
-    baseitems.append("rect")
+    // body
+    var off = to_grid(overlapp);
+    var rad = to_grid(1 + overlapp);
+    var bot = to_grid(2 + overlapp);
+    baseitems.append("path")
         .attr("class", "logic")
-        .attr("y", to_grid(-overlapp))
-        .attr("width", to_grid(2))
-        .attr("height", to_grid(2 + 2 * overlapp));
+        .attr("d", "M 0 " + (-off) + " L 16 " + (-off) +
+              " a" + rad + "," + rad + " 0 1,1 0," + (2 * rad) +
+              " L 0 " + bot + " L 0 " + (-off))
 
     //input connector
-    for (i = 0; i < 3; ++i) {
+    for (i = 0; i < 2; ++i) {
         baseitems.append("line")
             .attr("class", "logic")
             .attr("x1", to_grid(-0.5))
             .attr("x2", 0)
-            .attr("y1", to_grid(i))
-            .attr("y2", to_grid(i));
+            .attr("y1", to_grid(2 * i))
+            .attr("y2", to_grid(2 * i));
     }
 
     // output connector
     baseitems.append("line")
         .attr("class", "logic")
-        .attr("x1", to_grid(2))
-        .attr("x2", to_grid(2.5))
+        .attr("x1", to_grid(3))
+        .attr("x2", to_grid(3.5))
         .attr("y1", to_grid(1))
         .attr("y2", to_grid(1));
 
+    // negation
+    baseitems.append("circle")
+        .attr("class", "logic")
+        .attr("cx", to_grid(3 + 0.25))
+        .attr("cy", to_grid(1))
+        .attr("r", to_grid(0.25))
+
     // label
+    /*
     baseitems.append("text")
         .attr("class", "logic")
         .attr("x", to_grid(1))
@@ -105,7 +116,7 @@ LogikSim.Frontend.Scene = function (scene_id, scene_data) {
         .text(function (d) {
             return d.text;
         });
-
+    */
 
     // create interconnect items
 
@@ -141,7 +152,9 @@ LogikSim.Frontend.Scene = function (scene_id, scene_data) {
         .attr("cx", function (d) { return to_grid(d.x); })
         .attr("cy", function (d) { return to_grid(d.y); })
         .attr("r", function (d) { return to_grid(0.5); })
-        .on("click", function(d, i) { d.on_trigger(d, this); })
+        .on("click", function (d, i) { d.on_trigger(d, this); })
+
+
 
     // register top DOM elements in javascript objects
     this.scene.selectAll("g.item")
