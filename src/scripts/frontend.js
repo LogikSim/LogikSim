@@ -12,7 +12,6 @@ Array.prototype.extend = function (other_array) {
 
 
 LogikSim.Frontend.Scene = function (scene_id, scene_data) {
-    console.log(scene_data);
     this.scene_id = scene_id;
     this.scene_data = scene_data;
 
@@ -24,19 +23,36 @@ LogikSim.Frontend.Scene = function (scene_id, scene_data) {
     var simulation = new LogikSim.Backend.Simulation('scripts/');
 
     simulation.set_handler('update', function (msg) {
-        console.log(msg);
+        return;
     });
 
     // create components
 
     var to_grid = this.to_grid.bind(this);
 
-    this.items = [];
-    for (var i = 0; i < this.scene_data.items.length; i++) {
+    this.items = []; // frontend items
+    this.item_ids = []; // backend item ids
+    this.backend_id_of_frontend_id = {}; // id translation
+    var i;
+    for (i = 0; i < this.scene_data.items.length; i++) {
         var item = this.scene_data.items[i];
-        simulation.create_component(item.type);
+        var backend_id = simulation.create_component(item.type).component_id;
+        console.log(item, backend_id);
+        this.item_ids.push(backend_id);
         this.items.push(new type_map[item.type](this, item));
+        if (item.id !== undefined) {
+            this.backend_id_of_frontend_id[item.id] = backend_id;
+        }
     }
+
+    // setup connection for interconnect items
+    for (i = 0; i < this.items.length; i++) {
+        var item = this.items[i];
+        if (item instanceof LogikSim.Frontend.Interconnect) {
+            item.connect(this.item_ids[i], simulation, this.backend_id_of_frontend_id);
+        }
+    }
+
     
     // create all items
     var logicitems = this.scene.selectAll("g.item")
@@ -103,7 +119,7 @@ LogikSim.Frontend.Scene = function (scene_id, scene_data) {
         .attr("d", function (d) { return d; });
 
     // draw edge indicators
-    var radius = 0.27;
+    var radius = 0.22;
     this.scene.selectAll("g.interconnect")
         .selectAll("g")
         .data(function (d) { return d.indicators; })
@@ -229,16 +245,16 @@ LogikSim.Frontend.Interconnect.prototype = {
         return this.scene.to_grid(p.x) + " " + this.scene.to_grid(p.y);
     },
 
-    _iter_tree: function (tree, last_node) {
+    _iter_tree_to_paths: function (tree, last_node) {
         var path = "";
         if (last_node !== null) {
             path += "M " + this._p_to_str(last_node);
         }
         var paths = [];
-        for (var i = 0; i < tree.length ; i++) {
+        for (var i = 0; i < tree.length; i++) {
             var item = tree[i];
             if (item instanceof Array) {
-                paths.extend(this._iter_tree(item, last_node));
+                paths.extend(this._iter_tree_to_paths(item, last_node));
             } else {
                 var str_p = this._p_to_str(item);
                 if (last_node === null) {
@@ -254,14 +270,14 @@ LogikSim.Frontend.Interconnect.prototype = {
     },
 
     tree_to_paths: function (tree) {
-        return this._iter_tree(tree, null);
+        return this._iter_tree_to_paths(tree, null);
     },
 
     tree_to_indicators: function (tree) {
         function iter_tree(tree, last_node) {
             var indicators = [];
             var subpath_count = 0;
-            for (var i = 0; i < tree.length ; i++) {
+            for (var i = 0; i < tree.length; i++) {
                 var item = tree[i];
                 if (item instanceof Array) {
                     indicators.extend(iter_tree(item, last_node));
@@ -276,7 +292,38 @@ LogikSim.Frontend.Interconnect.prototype = {
             return indicators;
         }
         return iter_tree(tree, null);
+    },
+
+    /**
+     * Setup all connections in the backend based on path definition.
+     * @param self_id backend id of the interconnect itself
+     * @param simulation backend simulation reference
+     * @param backend_id_of_frontend_id translation dict to convert frontend ids
+     *            to backend ids
+     */
+    connect: function (my_id, simulation, backend_id_of_frontend_id) {
+        var last_id = 0;
+        function iter_tree(tree) {
+            for (var i = 0; i < tree.length; i++) {
+                var item = tree[i];
+                if (item instanceof Array) {
+                    iter_tree(item);
+                } else {
+                    if (item.type === "output") {
+                        simulation.connect(
+                            backend_id_of_frontend_id[item.elem_id], item.con_num - 1, 
+                            my_id, 0);
+                    } else if (item.type === "input") {
+                        simulation.connect(
+                            my_id, last_id++,
+                            backend_id_of_frontend_id[item.elem_id], item.con_num - 1);
+                    }
+                }
+            }
+        }
+        iter_tree(this.tree);
     }
+
 }
 
 var type_map = {
