@@ -34,7 +34,7 @@ LogikSim.Frontend.Scene = function (scene_id, scene_data) {
     this.backend_id_of_frontend_id = {}; // id translation
     for (i = 0; i < this.scene_data.items.length; i++) {
         var item = this.scene_data.items[i];
-        var backend_id = this.simulation.create_component(item.type, { inputs: 3 }).component_id;
+        var backend_id = this.simulation.create_component(item.type).component_id;
         var frontend_item = new type_map[item.type](this, item, backend_id);
         this.items[backend_id] = frontend_item;
         frontend_items.push(frontend_item)
@@ -303,7 +303,6 @@ LogikSim.Frontend.Interconnect = function (scene, data, backend_id) {
     this.paths = this.tree_to_paths(data.tree);
     this.indicators = this.tree_to_indicators(data.tree);
     this.triggers = this.tree_to_triggers(data.tree);
-    console.log(this.triggers);
 }
 
 LogikSim.Frontend.Interconnect.prototype = Object.create(LogikSim.Frontend.Item.prototype);
@@ -374,7 +373,6 @@ LogikSim.Frontend.Interconnect.prototype._iter_tree_to_triggers = function (tree
                 // create trigger function
                 item.last_state = false;
                 item.on_trigger = function (data, dom) {
-                    console.log(this.scene);
                     var new_state = !data.last_state;
                     this.scene.simulation.schedule_edge(this.backend_id, 0, new_state, 0);
                     data.last_state = new_state;
@@ -432,6 +430,7 @@ LogikSim.Frontend.Interconnect.prototype.update = function (props, clock) {
 
 var type_map = {
     AND: LogikSim.Frontend.AndItem,
+    NAND: LogikSim.Frontend.AndItem,
     OR: LogikSim.Frontend.OrItem,
     XOR: LogikSim.Frontend.XorItem,
     Interconnect: LogikSim.Frontend.Interconnect
