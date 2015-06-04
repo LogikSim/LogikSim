@@ -283,6 +283,53 @@ function do_test_simulation_with(description, simulation_factory) {
 
         }, 100);
 
+        it("should correctly simulate a sr flip-flow", function(done) {
+            var i = {
+                ns: simulation.create_component("Interconnect").component_id,
+                nr: simulation.create_component("Interconnect").component_id
+            };
+
+            var o = {
+                q: simulation.create_component("Interconnect").component_id,
+                nq: simulation.create_component("Interconnect").component_id
+            };
+
+            var nand_a = simulation.create_component("NAND").component_id;
+            var nand_b = simulation.create_component("NAND").component_id;
+
+            //wiring for nand_a
+            simulation.connect(i.ns, 0, nand_a, 0);
+            simulation.connect(o.nq, 0, nand_a, 1);
+            simulation.connect(nand_a, 0, o.q, 0); // out
+
+            //wiring for nand_b
+            simulation.connect(o.q, 0, nand_b, 0);
+            simulation.connect(i.nr, 0, nand_b, 1);
+            simulation.connect(nand_b, 0, o.nq, 0); // out
+
+            var timeslot_size = 20;
+
+            var truth_table = [
+                { ns: false, nr: true , q: true , nq: false },
+                { ns: true, nr: true , q: true , nq: false },
+                { ns: true, nr: false , q: false , nq: true },
+                { ns: true, nr: true , q: false , nq: true},
+                { ns: false, nr: false , q: true , nq: true }, // non-allowed state
+
+                // Same random transitions
+                { ns: false, nr: true , q: true , nq: false },
+                { ns: true, nr: false , q: false , nq: true },
+                { ns: false, nr: true , q: true , nq: false },
+                { ns: true, nr: true , q: true , nq: false },
+                { ns: false, nr: true , q: true , nq: false },
+                { ns: true, nr: false , q: false , nq: true },
+                { ns: true, nr: true , q: false , nq: true},
+                { ns: true, nr: false , q: false , nq: true }
+            ];
+
+            run_async_truth_table_simulation(simulation, i, o, truth_table, timeslot_size, done);
+        }, 100);
+
     }); // end of describe
 }
 
@@ -387,6 +434,7 @@ function run_async_truth_table_simulation(simulation, inputs, outputs, truth_tab
         if (msg.clock < delay_for_step(current_step)) {
             // Stepped to early
             --current_step;
+            //console.log("Stepped back to " + current_step);
         } else if (msg.clock >= delay_for_step(current_step + 1)) {
             if (!last_equal && updates_for_this_entry == 0) {
                 console.log("No valid solution reached for " + current_step);
