@@ -236,159 +236,189 @@ function do_test_simulation_with(description, simulation_factory) {
             simulation.connect(xor, 0, s, 0);
             simulation.connect(and, 0, c, 0);
 
-            function delay_for_step(index) {
-                return (index * 50) || 1;
-            }
+            var timeslot_size = 50;
+
+            var inputs = {
+                x: x, y: y
+            };
+
+            var outputs = {
+                s: s, c: c
+            };
 
             var truth_table = [
                 // Standard truth table
-                {x: 0, y: 0, c: 0, s: 0},
-                {x: 0, y: 1, c: 0, s: 1},
-                {x: 1, y: 0, c: 0, s: 1},
-                {x: 1, y: 1, c: 1, s: 0},
-                {x: 1, y: 0, c: 0, s: 1},
-                {x: 0, y: 1, c: 0, s: 1},
+                {x: false, y: false, c: false, s: false},
+                {x: false, y: true , c: false, s: true },
+                {x: true , y: false, c: false, s: true },
+                {x: true , y: true , c: true , s: false},
+                {x: true , y: false, c: false, s: true },
+                {x: false, y: true , c: false, s: true },
 
                 // Additional shuffled entries from the table
-                { x: 1, y: 1, c: 1, s: 0 },
-                { x: 1, y: 0, c: 0, s: 1 },
-                { x: 1, y: 0, c: 0, s: 1 },
-                { x: 0, y: 1, c: 0, s: 1 },
-                { x: 0, y: 0, c: 0, s: 0 },
-                { x: 1, y: 0, c: 0, s: 1 },
-                { x: 0, y: 1, c: 0, s: 1 },
-                { x: 1, y: 0, c: 0, s: 1 },
-                { x: 1, y: 0, c: 0, s: 1 },
-                { x: 0, y: 0, c: 0, s: 0 },
-                { x: 0, y: 1, c: 0, s: 1 },
-                { x: 0, y: 1, c: 0, s: 1 },
-                { x: 0, y: 0, c: 0, s: 0 },
-                { x: 1, y: 0, c: 0, s: 1 },
-                { x: 1, y: 1, c: 1, s: 0 },
-                { x: 0, y: 1, c: 0, s: 1 },
-                { x: 0, y: 1, c: 0, s: 1 },
-                { x: 1, y: 1, c: 1, s: 0 },
+                { x: true , y: true , c: true , s: false },
+                { x: true , y: false, c: false, s: true  },
+                { x: true , y: false, c: false, s: true  },
+                { x: false, y: true , c: false, s: true  },
+                { x: false, y: false, c: false, s: false },
+                { x: true , y: false, c: false, s: true  },
+                { x: false, y: true , c: false, s: true  },
+                { x: true , y: false, c: false, s: true  },
+                { x: true , y: false, c: false, s: true  },
+                { x: false, y: false, c: false, s: false },
+                { x: false, y: true , c: false, s: true  },
+                { x: false, y: true , c: false, s: true  },
+                { x: false, y: false, c: false, s: false },
+                { x: true , y: false, c: false, s: true  },
+                { x: true , y: true , c: true , s: false },
+                { x: false, y: true , c: false, s: true  },
+                { x: false, y: true , c: false, s: true  },
+                { x: true , y: true , c: true , s: false },
 
                 // Last entry _must_ cause change messages for proper termination of this test
-                {x: 0, y: 0, c: 0, s: 0}
+                {x: false, y: false, c: false, s: false}
             ];
 
-            for (var i = 0; i < truth_table.length; ++i) {
-                var entry = truth_table[i];
+            run_async_truth_table_simulation(simulation, inputs, outputs, truth_table, timeslot_size, done);
 
-                simulation.schedule_edge(x, 0, entry.x, delay_for_step(i));
-                simulation.schedule_edge(y, 0, entry.y, delay_for_step(i));
-            }
-
-            var current_step = 0;
-            var last_seen = {};
-            var last_equal = false;
-            var updates_for_this_entry = 0;
-
-            simulation.set_handler('stopped', function(msg) {
-                expect(current_step).toEqual(truth_table.length);
-                done();
-            });
-
-            simulation.set_handler("error", function(msg) {
-                console.log("Encountered error");
-                console.log(msg);
-                expect(true).toBeFalsy();
-                done();
-            });
-
-            simulation.set_handler("update", function(msg) {
-                if (msg.clock >= delay_for_step(truth_table.length)) {
-                    console.log("Simulation time is above expected");
-                    console.log(msg);
-                    expect(true).toBeFalsy();
-                    done();
-                }
-
-                if (current_step >= truth_table.length) {
-                    console.log("Unexpected trailing item updates");
-                    console.log(msg);
-                    expect(true).toBeFalsy();
-                    return;
-                }
-
-                var state = undefined;
-                switch (msg.props.id) {
-                    case x:
-                        state = msg.props.input_states;
-                        if (state === undefined) return;
-
-                        last_seen.x = state[0];
-                        break;
-                    case y:
-                        state = msg.props.input_states;
-                        if (state === undefined) return;
-
-                        last_seen.y = state[0];
-                        break;
-                    case s:
-                        state = msg.props.output_states;
-                        if (state === undefined) return;
-
-                        last_seen.s = state[0];
-                        break;
-                    case c:
-                        state = msg.props.output_states;
-                        if (state === undefined) return;
-
-                        last_seen.c = state[0];
-                        break;
-                    default:
-                        return;
-                }
-
-                //console.log(msg.clock + ": " + JSON.stringify(last_seen));
-
-                if (msg.clock < delay_for_step(current_step)) {
-                    // Stepped to early
-                    --current_step;
-                } else if (msg.clock >= delay_for_step(current_step + 1)) {
-                    if (!last_equal && updates_for_this_entry == 0) {
-                        console.log("No valid solution reached for " + current_step);
-                        console.log("  last equal: " + last_equal + ", updates: " + updates_for_this_entry);
-                        expect(true).toBeFalsy();
-                    }
-
-                    ++current_step;
-                }
-
-                var truth = truth_table[current_step];
-                if (msg.clock >= delay_for_step(current_step)
-                    && last_seen.x == truth.x
-                    && last_seen.y == truth.y
-                    && last_seen.s == truth.s
-                    && last_seen.c == truth.c) {
-
-                    //console.log(current_step + "/" + (truth_table.length - 1) + " done");
-
-                    ++current_step;
-                    updates_for_this_entry = 0;
-
-                    if (current_step >= truth_table.length) {
-                        simulation.stop();
-                    }
-
-                    truth = truth_table[current_step];
-                    last_equal = (last_seen.x == truth.x
-                                    && last_seen.y == truth.y
-                                    && last_seen.s == truth.s
-                                    && last_seen.c == truth.c);
-
-                    //console.log("Next > " + delay_for_step(current_step) + ": " + JSON.stringify(truth_table[current_step]));
-                }
-
-                ++updates_for_this_entry;
-            });
-
-            simulation.start();
         }, 100);
 
     }); // end of describe
+}
+
+/**
+ * Checks a given simulation against a given truth table.
+ *
+ * @note The execution order matches the order of entries in the truth_table and can be relied
+ *       upon for testing stateful circuits.
+ *
+ * @note Last entry in the truth table must result in input and/or output changes for the test
+ *       to properly terminate.
+ *
+ * @param simulation Pre-built simulation with all needed components and input/output interconnects
+ * @param inputs Map between truth table key name and input interconnect id
+ * @param outputs Map between truth table key name and output interconnect id
+ * @param truth_table Array of dictionaries which contain the expected inputs and outputs as name:boolean pairs
+ * @param timeslot_size Time to give each entry in the truth table to stabilize
+ * @param done Jasmine done callback so the test can be ended
+ */
+function run_async_truth_table_simulation(simulation, inputs, outputs, truth_table, timeslot_size, done) {
+    function delay_for_step(index) {
+        return (index * timeslot_size) || 1;
+    }
+
+    for (var i = 0; i < truth_table.length; ++i) {
+        var entry = truth_table[i];
+
+        for (var k in inputs) {
+            if (!inputs.hasOwnProperty(k)) continue;
+            simulation.schedule_edge(inputs[k], 0, entry[k], delay_for_step(i));
+        }
+    }
+
+    var current_step = 0;
+    var last_seen = {};
+    var last_equal = false;
+    var updates_for_this_entry = 0;
+
+    simulation.set_handler('stopped', function(msg) {
+        expect(current_step).toEqual(truth_table.length);
+        done();
+    });
+
+    simulation.set_handler("error", function(msg) {
+        console.log("Encountered error");
+        console.log(msg);
+        expect(true).toBeFalsy();
+        done();
+    });
+
+    simulation.set_handler("update", function(msg) {
+        if (msg.clock >= delay_for_step(truth_table.length)) {
+            console.log("Simulation time is above expected");
+            console.log(msg);
+            expect(true).toBeFalsy();
+            done();
+        }
+
+        if (current_step >= truth_table.length) {
+            console.log("Unexpected trailing item updates");
+            console.log(msg);
+            expect(true).toBeFalsy();
+            return;
+        }
+
+        var state = undefined;
+
+        function applyMessage(msg) {
+            for (var input in inputs) {
+                if (!inputs.hasOwnProperty(input)) continue;
+                if (inputs[input] == msg.props.id) {
+                    state = msg.props.input_states;
+                    if (state === undefined)
+                        return false;
+
+                    last_seen[input] = state[0];
+                    return true;
+                }
+            }
+
+            for (var output in outputs) {
+                if (!outputs.hasOwnProperty(output)) continue;
+                if (outputs[output] == msg.props.id) {
+                    state = msg.props.output_states;
+                    if (state === undefined)
+                        return false;
+
+                    last_seen[output] = state[0];
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        if (!applyMessage(msg)) {
+            return;
+        }
+
+        //console.log(msg.clock + ": " + JSON.stringify(last_seen));
+
+        if (msg.clock < delay_for_step(current_step)) {
+            // Stepped to early
+            --current_step;
+        } else if (msg.clock >= delay_for_step(current_step + 1)) {
+            if (!last_equal && updates_for_this_entry == 0) {
+                console.log("No valid solution reached for " + current_step);
+                console.log("  last equal: " + last_equal + ", updates: " + updates_for_this_entry);
+                expect(true).toBeFalsy();
+            }
+
+            ++current_step;
+        }
+
+        var truth = truth_table[current_step];
+        if (msg.clock >= delay_for_step(current_step)
+            && LogikSim._.isEqual(last_seen, truth)) {
+
+            //console.log(current_step + "/" + (truth_table.length - 1) + " done");
+
+            ++current_step;
+            updates_for_this_entry = 0;
+
+            if (current_step >= truth_table.length) {
+                simulation.stop();
+            }
+
+            last_equal = LogikSim._.isEqual(last_seen, truth_table[current_step])
+
+            //console.log("Next > " + delay_for_step(current_step) + ": " + JSON.stringify(truth_table[current_step]));
+        }
+
+        ++updates_for_this_entry;
+    });
+
+    simulation.start();
 }
 
 // Most of the tests of backend with or without web-worker should be identical so
