@@ -34,7 +34,12 @@ LogikSim.Frontend.Scene = function (scene_id, scene_data) {
     this.backend_id_of_frontend_id = {}; // id translation
     for (i = 0; i < this.scene_data.items.length; i++) {
         var item = this.scene_data.items[i];
-        var backend_id = this.simulation.create_component(item.type).component_id;
+        if (item.type !== "Text") {
+            var backend_id = this.simulation.create_component(item.type).component_id;
+        } else {
+            var backend_id = undefined;
+        }
+        
         var frontend_item = new type_map[item.type](this, item, backend_id);
         this.items[backend_id] = frontend_item;
         frontend_items.push(frontend_item)
@@ -117,6 +122,15 @@ LogikSim.Frontend.Scene = function (scene_id, scene_data) {
             return d.text;
         });
     */
+
+    // create text items
+    this.scene.selectAll("g.text")
+        .append("text")
+        .attr("class", "logic")
+        .text(function (d) {
+            return d.text;
+        });
+    
 
     // create interconnect items
 
@@ -452,6 +466,19 @@ LogikSim.Frontend.Interconnect.prototype.update = function (props, clock) {
     }
 }
 
+// Text
+
+LogikSim.Frontend.Text = function (scene, data, backend_id) {
+    LogikSim.Frontend.Item.call(this, scene, data, backend_id);
+
+    this.types += " text";
+    this.text = data.text;
+}
+
+LogikSim.Frontend.Text.prototype = Object.create(LogikSim.Frontend.Item.prototype);
+LogikSim.Frontend.Text.prototype.constructor = LogikSim.Frontend.Text;
+
+
 // Type Map
 
 var type_map = {
@@ -459,6 +486,7 @@ var type_map = {
     NAND: LogikSim.Frontend.AndItem,
     OR: LogikSim.Frontend.OrItem,
     XOR: LogikSim.Frontend.XorItem,
-    Interconnect: LogikSim.Frontend.Interconnect
+    Interconnect: LogikSim.Frontend.Interconnect,
+    Text: LogikSim.Frontend.Text,
 };
 

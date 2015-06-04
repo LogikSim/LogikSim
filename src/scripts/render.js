@@ -54,12 +54,17 @@ var fulladder_sim = new LogikSim.Frontend.Scene("flipflop", {
     scene_height: 15, // scene height in scene coordinates
     scale: 10, // number of pixels for one scene coordinate
     items: [
-        { type: "Interconnect", tree: [t(2, 4), i(6, 4, 1, 1)] }, // J input
-        { type: "Interconnect", tree: [t(2, 11), i(6, 11, 2, 2)] }, // K input
+        { type: "Interconnect", tree: [t(2, 4), i(6, 4, 1, 1)] }, // !S input
+        { type: "Interconnect", tree: [t(2, 11), i(6, 11, 2, 2)] }, // !R input
         { type: "Interconnect", tree: [o(9, 5, 1, 1), p(11, 5), [p(11, 7), p(4, 7), p(4, 9), i(6, 9, 2, 1)], [p(13, 5)] ] }, // Q output
         { type: "Interconnect", tree: [o(9, 10, 2, 1), p(11, 10), [p(11, 8), p(3, 8), p(3, 6), i(6, 6, 1, 2)], [p(13, 10)]] }, // !Q output
         { type: "NAND", id: 1, x: 6, y: 4 },
         { type: "NAND", id: 2, x: 6, y: 9 },
+        { type: "Text", text: "̅S", x: 1, y: 4 },
+        { type: "Text", text: "̅R", x: 1, y: 11 },
+        { type: "Text", text: "Q", x: 14, y: 5 },
+        { type: "Text", text: "̅Q", x: 14, y: 10 },
+
     ]
 });
 
