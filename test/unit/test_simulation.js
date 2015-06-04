@@ -236,9 +236,15 @@ function do_test_simulation_with(description, simulation_factory) {
             simulation.connect(xor, 0, s, 0);
             simulation.connect(and, 0, c, 0);
 
-            function delay_for_step(index) {
-                return (index * 50) || 1;
-            }
+            var timeslot_size = 50;
+
+            var inputs = {
+                x: x, y: y
+            };
+
+            var outputs = {
+                s: s, c: c
+            };
 
             var truth_table = [
                 // Standard truth table
@@ -273,11 +279,17 @@ function do_test_simulation_with(description, simulation_factory) {
                 {x: 0, y: 0, c: 0, s: 0}
             ];
 
+            function delay_for_step(index) {
+                return (index * timeslot_size) || 1;
+            }
+
             for (var i = 0; i < truth_table.length; ++i) {
                 var entry = truth_table[i];
 
-                simulation.schedule_edge(x, 0, entry.x, delay_for_step(i));
-                simulation.schedule_edge(y, 0, entry.y, delay_for_step(i));
+                for (var k in inputs) {
+                    if (!inputs.hasOwnProperty(k)) continue;
+                    simulation.schedule_edge(inputs[k], 0, entry[k], delay_for_step(i));
+                }
             }
 
             var current_step = 0;
@@ -359,10 +371,7 @@ function do_test_simulation_with(description, simulation_factory) {
 
                 var truth = truth_table[current_step];
                 if (msg.clock >= delay_for_step(current_step)
-                    && last_seen.x == truth.x
-                    && last_seen.y == truth.y
-                    && last_seen.s == truth.s
-                    && last_seen.c == truth.c) {
+                    && LogikSim._.isEqual(last_seen, truth)) {
 
                     //console.log(current_step + "/" + (truth_table.length - 1) + " done");
 
@@ -373,11 +382,7 @@ function do_test_simulation_with(description, simulation_factory) {
                         simulation.stop();
                     }
 
-                    truth = truth_table[current_step];
-                    last_equal = (last_seen.x == truth.x
-                                    && last_seen.y == truth.y
-                                    && last_seen.s == truth.s
-                                    && last_seen.c == truth.c);
+                    last_equal = LogikSim._.isEqual(last_seen, truth_table[current_step])
 
                     //console.log("Next > " + delay_for_step(current_step) + ": " + JSON.stringify(truth_table[current_step]));
                 }
