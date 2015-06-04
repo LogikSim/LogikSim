@@ -52,6 +52,15 @@
     stroke: black;
 }
 
+.scene path.interconnect.activated{
+    stroke: red;
+}
+
+.scene rect.interconnect.activated{
+    stroke: red;
+    fill: red;
+}
+
 /*body {
     margin: 0;
     transform: translate(0.5px, 0.5px);

@@ -28,13 +28,16 @@ LogikSim.Frontend.Scene = function (scene_id, scene_data) {
 
     var i;
     var to_grid = this.to_grid.bind(this);
+    var frontend_items = [];
 
     this.items = {}; // backend-id --> frontend-item
     this.backend_id_of_frontend_id = {}; // id translation
     for (i = 0; i < this.scene_data.items.length; i++) {
         var item = this.scene_data.items[i];
         var backend_id = simulation.create_component(item.type).component_id;
-        this.items[backend_id] = new type_map[item.type](this, item, backend_id);
+        var frontend_item = new type_map[item.type](this, item, backend_id);
+        this.items[backend_id] = frontend_item;
+        frontend_items.push(frontend_item)
         if (item.id !== undefined) {
             this.backend_id_of_frontend_id[item.id] = backend_id;
         }
@@ -53,7 +56,7 @@ LogikSim.Frontend.Scene = function (scene_id, scene_data) {
     
     // create all items
     var logicitems = this.scene.selectAll("g.item")
-        .data(this.items)
+        .data(frontend_items)
         .enter().append("g")
         .attr("transform", function (d) {
             return "translate(" +
@@ -128,8 +131,17 @@ LogikSim.Frontend.Scene = function (scene_id, scene_data) {
         .attr("width", to_grid(2 * radius))
         .attr("height", to_grid(2 * radius));
 
+    // register top DOM elements in javascript objects
+    this.scene.selectAll("g.item")
+        .each(function (d, i) {
+            d.register_dom(this);
+        });
+
     // start simulation
     simulation.start();
+
+    //console.log(this.items);
+    simulation.schedule_edge(4, 0, 1, 0);
 }
 
 LogikSim.Frontend.Scene.prototype = {
@@ -211,12 +223,17 @@ LogikSim.Frontend.Item = function (scene, data, backend_id) {
     this.x = data.x || 0;
     this.y = data.y || 0;
     this.backend_id = backend_id;
+    this.dom = undefined;
 }
 
 LogikSim.Frontend.Item.prototype = {
     update: function (props, clock) {
         return;
     },
+
+    register_dom: function (dom) {
+        this.dom = dom;
+    }
 }
 
 // Logic
@@ -335,12 +352,12 @@ LogikSim.Frontend.Interconnect.prototype.tree_to_indicators = function (tree) {
 }
 
 /**
-    * Setup all connections in the backend based on path definition.
-    * @param self_id backend id of the interconnect itself
-    * @param simulation backend simulation reference
-    * @param backend_id_of_frontend_id translation dict to convert frontend ids
-    *            to backend ids
-    */
+ * Setup all connections in the backend based on path definition.
+ * @param self_id backend id of the interconnect itself
+ * @param simulation backend simulation reference
+ * @param backend_id_of_frontend_id translation dict to convert frontend ids
+ *            to backend ids
+ */
 LogikSim.Frontend.Interconnect.prototype.connect = function (simulation, backend_id_of_frontend_id) {
     var last_id = 0;
     var my_id = this.backend_id;
@@ -363,6 +380,15 @@ LogikSim.Frontend.Interconnect.prototype.connect = function (simulation, backend
         }
     }
     iter_tree(this.tree);
+}
+
+LogikSim.Frontend.Interconnect.prototype.update = function (props, clock) {
+    //console.log(props);
+    if (props.input_states !== undefined) {
+        d3.select(this.dom).selectAll("*").classed("activated", props.input_states[0]);
+        console.log(props.input_states[0]);
+    }
+    //d3.select(this.dom).selectAll("*").classed("activated", true);
 }
 
 // Type Map
