@@ -178,6 +178,8 @@ LogikSim.Backend.Component.prototype = {
      * @param state New state for port.
      */
     edge: function(input_port, state) {
+        //console.log(this.id() + ": Edge on port " + input_port + " to state " + state);
+
         if (input_port > this.inputs - 1 || input_port < 0) {
             return;
         }
@@ -192,6 +194,8 @@ LogikSim.Backend.Component.prototype = {
      * @return {Array} Array of events resulting from the.
      */
     clock: function(when) {
+        //console.log(this.id() + ": Clocked at time " + when);
+
         var events = [];
 
         if (this.inputs_changed) {
@@ -314,7 +318,8 @@ LogikSim.Backend.Component.prototype = {
 
         this.propagate({
             id: this.id(),
-            output_connections: this._convert_for_propagation(this.props.output_connections)
+            output_connections: this._convert_for_propagation(this.props.output_connections),
+            output_states: this.props.output_states
         });
 
         return true;
@@ -437,6 +442,22 @@ LogikSim.Backend.Component.prototype = {
         if (this.props.output_connections[output_port] !== undefined) {
             // Can't connect twice
             return false;
+        }
+
+        //console.log(this.id() + ": Connect " + output_port + " to " + input_port + "@" + component.id());
+
+        if (this.outputs <= output_port) {
+            if (output_port >= this.props.outputs_max) {
+                // Max ports would be exceeded
+                return false;
+            }
+
+            this._adjust_output_count(output_port + 1, true);
+
+            if (this.outputs <= output_port) {
+                // Failed to add enough outputs
+                return false;
+            }
         }
 
         if (!component.connected(this, output_port, input_port, this.props.output_states[output_port])) {

@@ -33,7 +33,8 @@ module.exports = function(config) {
       'src/scripts/**/*.js',
 
       // Spec files
-      'test/unit/*.js'
+      'test/unit/helpers_for_test.js',
+      'test/unit/test_*.js'
     ],
 
 

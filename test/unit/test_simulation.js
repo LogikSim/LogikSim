@@ -194,7 +194,8 @@ function do_test_simulation_with(description, simulation_factory) {
                         expect(msg.props.id).toBe(c1_id);
                         expect(msg.props.output_connections).toEqual([{
                             component: c2_id,
-                            input_port: 0
+                            input_port: 0,
+                            delay: 0
                         }]);
                         ++step;
                         break;
@@ -212,6 +213,115 @@ function do_test_simulation_with(description, simulation_factory) {
             });
             simulation.connect(c1_id, 0, c2_id, 0);
             simulation.disconnect(c1_id, 0);
+        }, 100);
+
+        it("should correctly simulate a compound half-adder", function(done) {
+            var x = simulation.create_component("Interconnect").component_id;
+            var y = simulation.create_component("Interconnect").component_id;
+            var s = simulation.create_component("Interconnect").component_id;
+            var c = simulation.create_component("Interconnect").component_id;
+
+            var xor = simulation.create_component("XOR").component_id;
+            var and = simulation.create_component("AND").component_id;
+
+            simulation.connect(x, 0, xor, 0);
+            simulation.connect(x, 1, and, 0);
+            simulation.connect(y, 0, xor, 1);
+            simulation.connect(y, 1, and, 1);
+
+            simulation.connect(xor, 0, s, 0);
+            simulation.connect(and, 0, c, 0);
+
+            var truth_table = [
+                {x:0, y:0, c:0, s:0, after: 1},
+                {x:0, y:1, c:0, s:1, after: 10},
+                {x:1, y:0, c:0, s:1, after: 20},
+                {x:1, y:1, c:1, s:0, after: 30}
+            ];
+
+            for (var i = 0; i < truth_table.length; ++i) {
+                var entry = truth_table[i];
+
+                simulation.schedule_edge(x, 0, entry.x, entry.after);
+                simulation.schedule_edge(y, 0, entry.y, entry.after);
+            }
+
+            var current_step = 0;
+            var last_seen = {};
+
+            simulation.set_handler('stopped', function(msg) {
+                expect(current_step).toEqual(truth_table.length);
+                done();
+            });
+
+            simulation.set_handler("error", function(msg) {
+                console.log("Encountered error");
+                console.log(msg);
+                expect(true).toBeFalsy();
+                done();
+            });
+
+            simulation.set_handler("update", function(msg) {
+                if (msg.clock > truth_table[truth_table.length - 1].after + 10) {
+                    console.log("Simulation time is above expected");
+                    console.log(msg);
+                    expect(true).toBeFalsy();
+                    done();
+                }
+
+                if (current_step >= truth_table.length) {
+                    console.log("Unexpected trailing item updates");
+                    console.log(msg);
+                    expect(true).toBeFalsy();
+                    return;
+                }
+
+                var state = undefined;
+                switch (msg.props.id) {
+                    case x:
+                        state = msg.props.input_states;
+                        if (state === undefined) return;
+
+                        last_seen.x = state[0];
+                        break;
+                    case y:
+                        state = msg.props.input_states;
+                        if (state === undefined) return;
+
+                        last_seen.y = state[0];
+                        break;
+                    case s:
+                        state = msg.props.output_states;
+                        if (state === undefined) return;
+
+                        last_seen.s = state[0];
+                        break;
+                    case c:
+                        state = msg.props.output_states;
+                        if (state === undefined) return;
+
+                        last_seen.c = state[0];
+                        break;
+                    default:
+                        return;
+                }
+
+                var truth = truth_table[current_step];
+                if (msg.clock > truth.after
+                    && last_seen.x == truth.x
+                    && last_seen.y == truth.y
+                    && last_seen.s == truth.s
+                    && last_seen.c == truth.c) {
+
+                    ++current_step;
+
+                    if (current_step >= truth_table.length) {
+                        simulation.stop();
+                    }
+                }
+            });
+
+            simulation.start();
         }, 100);
 
     }); // end of describe

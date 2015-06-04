@@ -29,7 +29,7 @@ LogikSim.Backend.Simulation = function(base_url, logger, worker) {
     };
     this._clock = 0;
     this._sent_requests = 0;
-    this._created_elements = 0;
+    this._created_elements = 1; // Has to start at 1 so we can meaningfully negate it for out edges
 
     this.worker.onmessage = this._handle.bind(this);
 };
@@ -137,6 +137,10 @@ LogikSim.Backend.Simulation.prototype = {
      * @return {number} Request id
      */
     connect: function(source_id, source_port, sink_id, sink_port, delay) {
+        if (delay === undefined) {
+            delay = 0;
+        }
+
         return this._post_to_backend("connect", {
             source_id: source_id,
             source_port: source_port,
@@ -172,7 +176,7 @@ LogikSim.Backend.Simulation.prototype = {
         return this._post_to_backend("schedule_edge", {
             component: component_id,
             input_port: input_port,
-            state: state,
+            state: !!state,
             delay: delay
         });
     },

@@ -39,13 +39,13 @@
     "inputs": 2,
     "inputs_max": 10,
     "outputs": 1,
-    "logic": "(function(ins) { return [ins.filter(function(s) { return s; }).length % 2]; })"
+    "logic": "(function(ins) { return [!!(ins.filter(function(s) { return s; }).length % 2)]; })"
   },
   "Interconnect": {
     "inputs": 1,
-    "outputs": 0,
+    "outputs": 1,
     "outputs_max": 100000,
-    "logic": "(function(ins, num_outs) { return Array(num_outs).map(function() { return ins[0]; }); })"
+    "logic": "(function(ins, num_outs) { var result = Array(num_outs); for (var i = 0; i < result.length; ++i) { result[i] = ins[0]; } ; return result; })"
   },
   "9BAA6238-E8C2-4153-A5BA-05E732EC019A": {
     "name": "Thingamagic",
