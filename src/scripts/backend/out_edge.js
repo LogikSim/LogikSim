@@ -15,7 +15,7 @@ LogikSim.Backend.OutEdge = function(when, component, output_port, state) {
     this.state = state;
 };
 
-LogikSim.Backend.OutEdge.prototype = Object.create(LogikSim.Backend.Event);
+LogikSim.Backend.OutEdge.prototype = Object.create(LogikSim.Backend.Event.prototype);
 LogikSim.Backend.OutEdge.prototype.constructor = LogikSim.Backend.OutEdge;
 
 LogikSim.Backend.OutEdge.prototype.process = function(last_in_group) {

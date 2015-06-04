@@ -11,7 +11,7 @@ LogikSim.Backend.Edge = function(when, component, input_port, state) {
     this.state = state;
 };
 
-LogikSim.Backend.Edge.prototype = Object.create(LogikSim.Backend.Event);
+LogikSim.Backend.Edge.prototype = Object.create(LogikSim.Backend.Event.prototype);
 LogikSim.Backend.Edge.prototype.constructor = LogikSim.Backend.Edge;
 
 LogikSim.Backend.Edge.prototype.process = function(last_in_group) {
