@@ -37,9 +37,7 @@ var scene = d3.select(".scene")
     .attr("height", height);
 
 scene = scene.append("g")
-    .attr("transform", function (d, i) {
-        return "translate(0.5, 0.55)";
-    })
+    .attr("transform", "translate(0.5, 0.55)");
 
 
 
@@ -177,7 +175,7 @@ var type_map = {
     interconnect: Interconnect,
 }
 
-items = [];
+var items = [];
 scene_data.items.forEach(function (item) {
     items.push(new type_map[item.type](item));
 });
