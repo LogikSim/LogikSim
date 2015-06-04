@@ -22,9 +22,7 @@ LogikSim.Frontend.Scene = function (scene_id, scene_data) {
 
     var simulation = new LogikSim.Backend.Simulation('scripts/');
 
-    simulation.set_handler('update', function (msg) {
-        console.log(msg);
-    });
+    simulation.set_handler('update', this.backend_handler.bind(this));
 
     // create components
 
@@ -135,6 +133,13 @@ LogikSim.Frontend.Scene = function (scene_id, scene_data) {
 }
 
 LogikSim.Frontend.Scene.prototype = {
+    backend_handler: function (msg) {
+        if (msg.message_type === "update") {
+            this.items[msg.props.id].update(msg.props, msg.clock);
+        }
+    },
+
+
     /**
      * Convert scene coordinates to view coordinates
      * @param z Scene coordinate
@@ -198,6 +203,8 @@ LogikSim.Frontend.Scene.prototype = {
 // frontend logicitems
 //
 
+// Item
+
 LogikSim.Frontend.Item = function (scene, data, backend_id) {
     this.types = "item";
     this.scene = scene;
@@ -206,11 +213,25 @@ LogikSim.Frontend.Item = function (scene, data, backend_id) {
     this.backend_id = backend_id;
 }
 
+LogikSim.Frontend.Item.prototype = {
+    update: function (props, clock) {
+        return;
+    },
+}
+
+// Logic
+
 LogikSim.Frontend.Logic = function (scene, data, backend_id) {
     LogikSim.Frontend.Item.call(this, scene, data, backend_id);
 
     this.types += " logic";
 }
+
+LogikSim.Frontend.Logic.prototype = Object.create(LogikSim.Frontend.Item.prototype);
+LogikSim.Frontend.Logic.prototype.constructor = LogikSim.Frontend.Logic;
+
+
+// AndItem
 
 LogikSim.Frontend.AndItem = function AndItem(scene, data, backend_id) {
     LogikSim.Frontend.Logic.call(this, scene, data, backend_id);
@@ -219,6 +240,11 @@ LogikSim.Frontend.AndItem = function AndItem(scene, data, backend_id) {
     this.text = "&";
 }
 
+LogikSim.Frontend.AndItem.prototype = Object.create(LogikSim.Frontend.Logic.prototype);
+LogikSim.Frontend.AndItem.prototype.constructor = LogikSim.Frontend.AndItem;
+
+// OrItem
+
 LogikSim.Frontend.OrItem = function (scene, data, backend_id) {
     LogikSim.Frontend.Logic.call(this, scene, data, backend_id);
 
@@ -226,12 +252,22 @@ LogikSim.Frontend.OrItem = function (scene, data, backend_id) {
     this.text = "≥1";
 }
 
+LogikSim.Frontend.OrItem.prototype = Object.create(LogikSim.Frontend.Logic.prototype);
+LogikSim.Frontend.OrItem.prototype.constructor = LogikSim.Frontend.OrItem;
+
+// XorItem
+
 LogikSim.Frontend.XorItem = function (scene, data, backend_id) {
     LogikSim.Frontend.Logic.call(this, scene, data, backend_id);
 
     this.types += " baseitem and";
     this.text = "=1";
 }
+
+LogikSim.Frontend.XorItem.prototype = Object.create(LogikSim.Frontend.Logic.prototype);
+LogikSim.Frontend.XorItem.prototype.constructor = LogikSim.Frontend.XorItem;
+
+// Interconnect
 
 LogikSim.Frontend.Interconnect = function (scene, data, backend_id) {
     LogikSim.Frontend.Item.call(this, scene, data, backend_id);
@@ -242,92 +278,94 @@ LogikSim.Frontend.Interconnect = function (scene, data, backend_id) {
     this.indicators = this.tree_to_indicators(data.tree);
 }
 
-LogikSim.Frontend.Interconnect.prototype = {
-    
-    _p_to_str: function(p) {
-        return this.scene.to_grid(p.x) + " " + this.scene.to_grid(p.y);
-    },
+LogikSim.Frontend.Interconnect.prototype = Object.create(LogikSim.Frontend.Item.prototype);
+LogikSim.Frontend.Interconnect.prototype.constructor = LogikSim.Frontend.Interconnect;
 
-    _iter_tree_to_paths: function (tree, last_node) {
-        var path = "";
-        if (last_node !== null) {
-            path += "M " + this._p_to_str(last_node);
+LogikSim.Frontend.Interconnect.prototype._p_to_str = function(p) {
+    return this.scene.to_grid(p.x) + " " + this.scene.to_grid(p.y);
+}
+
+LogikSim.Frontend.Interconnect.prototype._iter_tree_to_paths = function (tree, last_node) {
+    var path = "";
+    if (last_node !== null) {
+        path += "M " + this._p_to_str(last_node);
+    }
+    var paths = [];
+    for (var i = 0; i < tree.length; i++) {
+        var item = tree[i];
+        if (item instanceof Array) {
+            paths.extend(this._iter_tree_to_paths(item, last_node));
+        } else {
+            var str_p = this._p_to_str(item);
+            if (last_node === null) {
+                path += "M " + str_p;
+            } else {
+                path += " L " + str_p;
+            }
+            last_node = item;
         }
-        var paths = [];
+    }
+    paths.push(path);
+    return paths;
+}
+
+LogikSim.Frontend.Interconnect.prototype.tree_to_paths = function (tree) {
+    return this._iter_tree_to_paths(tree, null);
+}
+
+LogikSim.Frontend.Interconnect.prototype.tree_to_indicators = function (tree) {
+    function iter_tree(tree, last_node) {
+        var indicators = [];
+        var subpath_count = 0;
         for (var i = 0; i < tree.length; i++) {
             var item = tree[i];
             if (item instanceof Array) {
-                paths.extend(this._iter_tree_to_paths(item, last_node));
+                indicators.extend(iter_tree(item, last_node));
+                subpath_count += 1;
             } else {
-                var str_p = this._p_to_str(item);
-                if (last_node === null) {
-                    path += "M " + str_p;
-                } else {
-                    path += " L " + str_p;
-                }
                 last_node = item;
             }
         }
-        paths.push(path);
-        return paths;
-    },
-
-    tree_to_paths: function (tree) {
-        return this._iter_tree_to_paths(tree, null);
-    },
-
-    tree_to_indicators: function (tree) {
-        function iter_tree(tree, last_node) {
-            var indicators = [];
-            var subpath_count = 0;
-            for (var i = 0; i < tree.length; i++) {
-                var item = tree[i];
-                if (item instanceof Array) {
-                    indicators.extend(iter_tree(item, last_node));
-                    subpath_count += 1;
-                } else {
-                    last_node = item;
-                }
-            }
-            if (subpath_count >= 2) {
-                indicators.push(last_node);
-            }
-            return indicators;
+        if (subpath_count >= 2) {
+            indicators.push(last_node);
         }
-        return iter_tree(tree, null);
-    },
-
-    /**
-     * Setup all connections in the backend based on path definition.
-     * @param self_id backend id of the interconnect itself
-     * @param simulation backend simulation reference
-     * @param backend_id_of_frontend_id translation dict to convert frontend ids
-     *            to backend ids
-     */
-    connect: function (simulation, backend_id_of_frontend_id) {
-        var last_id = 0;
-        var my_id = this.backend_id;
-        function iter_tree(tree) {
-            for (var i = 0; i < tree.length; i++) {
-                var item = tree[i];
-                if (item instanceof Array) {
-                    iter_tree(item);
-                } else {
-                    if (item.type === "output") {
-                        simulation.connect(
-                            backend_id_of_frontend_id[item.elem_id], item.con_num - 1, 
-                            my_id, 0);
-                    } else if (item.type === "input") {
-                        simulation.connect(
-                            my_id, last_id++,
-                            backend_id_of_frontend_id[item.elem_id], item.con_num - 1);
-                    }
-                }
-            }
-        }
-        iter_tree(this.tree);
+        return indicators;
     }
+    return iter_tree(tree, null);
 }
+
+/**
+    * Setup all connections in the backend based on path definition.
+    * @param self_id backend id of the interconnect itself
+    * @param simulation backend simulation reference
+    * @param backend_id_of_frontend_id translation dict to convert frontend ids
+    *            to backend ids
+    */
+LogikSim.Frontend.Interconnect.prototype.connect = function (simulation, backend_id_of_frontend_id) {
+    var last_id = 0;
+    var my_id = this.backend_id;
+    function iter_tree(tree) {
+        for (var i = 0; i < tree.length; i++) {
+            var item = tree[i];
+            if (item instanceof Array) {
+                iter_tree(item);
+            } else {
+                if (item.type === "output") {
+                    simulation.connect(
+                        backend_id_of_frontend_id[item.elem_id], item.con_num - 1, 
+                        my_id, 0);
+                } else if (item.type === "input") {
+                    simulation.connect(
+                        my_id, last_id++,
+                        backend_id_of_frontend_id[item.elem_id], item.con_num - 1);
+                }
+            }
+        }
+    }
+    iter_tree(this.tree);
+}
+
+// Type Map
 
 var type_map = {
     AND: LogikSim.Frontend.AndItem,
