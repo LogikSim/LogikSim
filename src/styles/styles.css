@@ -7,7 +7,6 @@
     font: 12px sans-serif;
 /*    shape-rendering: crispEdges; */
 
-    
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     -khtml-user-select: none;
@@ -87,6 +86,8 @@
 
 .scene circle.interconnect.trigger {
     opacity: 0;
+
+    cursor: pointer;
 }
 
 /*body {
