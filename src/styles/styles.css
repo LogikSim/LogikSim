@@ -31,6 +31,10 @@
     fill: white;
 }
 
+.scene line.logic.activated {
+    stroke: red;
+}
+
 /* background lines */
 
 .scene line {

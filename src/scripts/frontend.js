@@ -85,7 +85,7 @@ LogikSim.Frontend.Scene = function (scene_id, scene_data) {
     //input connector
     for (i = 0; i < 2; ++i) {
         baseitems.append("line")
-            .attr("class", "logic")
+            .attr("class", "logic input")
             .attr("x1", to_grid(-0.5))
             .attr("x2", 0)
             .attr("y1", to_grid(2 * i))
@@ -94,7 +94,7 @@ LogikSim.Frontend.Scene = function (scene_id, scene_data) {
 
     // output connector
     baseitems.append("line")
-        .attr("class", "logic")
+        .attr("class", "logic output")
         .attr("x1", to_grid(3))
         .attr("x2", to_grid(3.5))
         .attr("y1", to_grid(1))
@@ -268,6 +268,19 @@ LogikSim.Frontend.Logic = function (scene, data, backend_id) {
 
 LogikSim.Frontend.Logic.prototype = Object.create(LogikSim.Frontend.Item.prototype);
 LogikSim.Frontend.Logic.prototype.constructor = LogikSim.Frontend.Logic;
+
+LogikSim.Frontend.Logic.prototype.update = function (props, clock) {
+    if (props.input_states !== undefined) {
+        d3.select(this.dom).selectAll(".input").classed("activated", function (d, i) {
+            return props.input_states[i];
+        });
+    }
+    if (props.output_states !== undefined) {
+        d3.select(this.dom).selectAll(".output").classed("activated", function (d, i) {
+            return props.output_states[i];
+        });
+    }
+}
 
 
 // AndItem
