@@ -34,7 +34,7 @@ LogikSim.Backend.Core = function(logger) {
     /** Total number of events scheduled for execution by this core since start. */
     this.scheduled_events = 0;
     /**
-     * Maxmimum interval between updating simulation clock as well
+     * Maximum interval between updating simulation clock as well
      * as returning control flow to the JS event loop
      */
     this.housekeeping_interval = 0.05;
@@ -134,7 +134,8 @@ LogikSim.Backend.Core.prototype = {
         var target_delay = this.housekeeping_interval;
 
         if (this.event_queue.length > 0) {
-            target_delay = (this.event_queue[0].when - this.clock) / this.simulation_rate;
+            var next_event_delay = (this.event_queue[0].when - this.clock) / this.simulation_rate;
+            target_delay = Math.min(this.housekeeping_interval, next_event_delay);
         }
 
         this._process_events_continuation = setTimeout(this._process_events.bind(this), target_delay);
@@ -155,7 +156,7 @@ LogikSim.Backend.Core.prototype = {
     },
     /**
      * Broken out inner core of event processing loop.
-     * @param upto_clock Only process events scheduled up to this time. -1 for executing till stable state.
+     * @param upto_clock Only process events scheduled up to this time.
      * @return Processed event or null if nothing was pending or clock limit reached
      * @private
      */

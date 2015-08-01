@@ -311,20 +311,20 @@ function do_test_simulation_with(description, simulation_factory) {
 
             var truth_table = [
                 { ns: false, nr: true , q: true , nq: false },
-                { ns: true, nr: true , q: true , nq: false },
-                { ns: true, nr: false , q: false , nq: true },
-                { ns: true, nr: true , q: false , nq: true},
-                { ns: false, nr: false , q: true , nq: true }, // non-allowed state
+                { ns: true , nr: true , q: true , nq: false },
+                { ns: true , nr: false, q: false, nq: true  },
+                { ns: true , nr: true , q: false, nq: true  },
+                { ns: false, nr: false, q: true , nq: true  }, // non-allowed state
 
                 // Same random transitions
                 { ns: false, nr: true , q: true , nq: false },
-                { ns: true, nr: false , q: false , nq: true },
+                { ns: true , nr: false, q: false, nq: true  },
                 { ns: false, nr: true , q: true , nq: false },
-                { ns: true, nr: true , q: true , nq: false },
+                { ns: true , nr: true , q: true , nq: false },
                 { ns: false, nr: true , q: true , nq: false },
-                { ns: true, nr: false , q: false , nq: true },
-                { ns: true, nr: true , q: false , nq: true},
-                { ns: true, nr: false , q: false , nq: true }
+                { ns: true , nr: false, q: false, nq: true  },
+                { ns: true , nr: true , q: false, nq: true  },
+                { ns: true , nr: false, q: false, nq: true  }
             ];
 
             run_async_truth_table_simulation(simulation, i, o, truth_table, timeslot_size, done);
@@ -354,6 +354,7 @@ function run_async_truth_table_simulation(simulation, inputs, outputs, truth_tab
         return (index * timeslot_size) || 1;
     }
 
+    // Schedule all edges in the truth table upfront
     for (var i = 0; i < truth_table.length; ++i) {
         var entry = truth_table[i];
 
@@ -432,13 +433,14 @@ function run_async_truth_table_simulation(simulation, inputs, outputs, truth_tab
         //console.log(msg.clock + ": " + JSON.stringify(last_seen));
 
         if (msg.clock < delay_for_step(current_step)) {
-            // Stepped to early
+            // Stepped to early, still unstable
             --current_step;
             //console.log("Stepped back to " + current_step);
         } else if (msg.clock >= delay_for_step(current_step + 1)) {
+            // No messages for last step, skipped one?
             if (!last_equal && updates_for_this_entry == 0) {
                 console.log("No valid solution reached for " + current_step);
-                console.log("  last equal: " + last_equal + ", updates: " + updates_for_this_entry);
+                console.log("  last equal: " + last_equal + " and no updates in this timeslot");
                 expect(true).toBeFalsy();
             }
 
@@ -458,7 +460,7 @@ function run_async_truth_table_simulation(simulation, inputs, outputs, truth_tab
                 simulation.stop();
             }
 
-            last_equal = LogikSim._.isEqual(last_seen, truth_table[current_step])
+            last_equal = LogikSim._.isEqual(last_seen, truth_table[current_step]);
 
             //console.log("Next > " + delay_for_step(current_step) + ": " + JSON.stringify(truth_table[current_step]));
         }
@@ -469,13 +471,14 @@ function run_async_truth_table_simulation(simulation, inputs, outputs, truth_tab
     simulation.start();
 }
 
-// Most of the tests of backend with or without web-worker should be identical so
-// we handle them like this to not have to copy and paste around all the time.
-/*
+// Most of the tests of backend with or without web-worker should be identical. However
+// debugging without web-workers is a lot easier so we handle them like this to not have
+// to copy and paste around all the time.
+
 do_test_simulation_with("A simulation with web-work backend", function() {
     return new LogikSim.Backend.Simulation('base/src/scripts/');
 });
-*/
+
 do_test_simulation_with("A test simulation _without_ web-worker backend", function() {
     return mk_synchronous_test_simulation('base/src/scripts/');
 });
