@@ -216,10 +216,6 @@ function do_test_simulation_with(description, simulation_factory) {
         }, 100);
 
         it("should correctly simulate a compound half-adder", function(done) {
-            simulation.set_simulation_properties({
-                simulation_rate: 10
-            });
-
             var x = simulation.create_component("Interconnect").component_id;
             var y = simulation.create_component("Interconnect").component_id;
             var s = simulation.create_component("Interconnect").component_id;
@@ -235,8 +231,6 @@ function do_test_simulation_with(description, simulation_factory) {
 
             simulation.connect(xor, 0, s, 0);
             simulation.connect(and, 0, c, 0);
-
-            var timeslot_size = 50;
 
             var inputs = {
                 x: x, y: y
@@ -279,8 +273,7 @@ function do_test_simulation_with(description, simulation_factory) {
                 {x: false, y: false, c: false, s: false}
             ];
 
-            run_async_truth_table_simulation(simulation, inputs, outputs, truth_table, timeslot_size, done);
-
+            run_async_truth_table_simulation(simulation, inputs, outputs, truth_table, done);
         }, 100);
 
         it("should correctly simulate a sr flip-flow", function(done) {
@@ -307,8 +300,6 @@ function do_test_simulation_with(description, simulation_factory) {
             simulation.connect(i.nr, 0, nand_b, 1);
             simulation.connect(nand_b, 0, o.nq, 0); // out
 
-            var timeslot_size = 20;
-
             var truth_table = [
                 { ns: false, nr: true , q: true , nq: false },
                 { ns: true , nr: true , q: true , nq: false },
@@ -327,7 +318,7 @@ function do_test_simulation_with(description, simulation_factory) {
                 { ns: true , nr: false, q: false, nq: true  }
             ];
 
-            run_async_truth_table_simulation(simulation, i, o, truth_table, timeslot_size, done);
+            run_async_truth_table_simulation(simulation, i, o, truth_table, done);
         }, 100);
 
     }); // end of describe
@@ -346,54 +337,76 @@ function do_test_simulation_with(description, simulation_factory) {
  * @param inputs Map between truth table key name and input interconnect id
  * @param outputs Map between truth table key name and output interconnect id
  * @param truth_table Array of dictionaries which contain the expected inputs and outputs as name:boolean pairs
- * @param timeslot_size Time to give each entry in the truth table to stabilize
  * @param done Jasmine done callback so the test can be ended
  */
-function run_async_truth_table_simulation(simulation, inputs, outputs, truth_table, timeslot_size, done) {
-    function delay_for_step(index) {
-        return (index * timeslot_size) || 1;
-    }
+function run_async_truth_table_simulation(simulation, inputs, outputs, truth_table, done) {
+    var current_step = 0;
+    var last_seen = {};
 
-    // Schedule all edges in the truth table upfront
-    for (var i = 0; i < truth_table.length; ++i) {
-        var entry = truth_table[i];
-
+    function schedule_truth_table_row() {
+        var entry = truth_table[current_step];
         for (var k in inputs) {
             if (!inputs.hasOwnProperty(k)) continue;
-            simulation.schedule_edge(inputs[k], 0, entry[k], delay_for_step(i));
+            simulation.schedule_edge(inputs[k], 0, entry[k], 1);
         }
     }
 
-    var current_step = 0;
-    var last_seen = {};
-    var last_equal = false;
-    var updates_for_this_entry = 0;
+    function fail(error, msg) {
+        console.log(error);
+        console.log(msg);
+        expect(true).toBeFalsy();
+        simulation.stop();
+        done();
+        throw error;
+    }
+
+    simulation.set_handler("error", function(msg) {
+        fail("Encountered error", msg);
+    });
+
+    var steady = false;
 
     simulation.set_handler('stopped', function(msg) {
-        expect(current_step).toEqual(truth_table.length);
+        if (current_step >= truth_table.length) {
+            fail("Unexpected trailing simulation stop. Simulation shouldn't be running.", msg);
+        }
+
+        expect(steady).toBeTruthy();
+        expect(last_seen).toEqual(truth_table[current_step]);
+
+        //console.log("Done with " + current_step + " of " + (truth_table.length - 1));
+        ++current_step;
+
+        var completed = current_step >= truth_table.length;
+        if (!completed) {
+            steady = false;
+            schedule_truth_table_row();
+            setTimeout(simulation.start.bind(simulation), 0); // Break recursion in non-webworker tests
+        }
+
+        //console.log("Completed truth table");
         done();
     });
 
-    simulation.set_handler("error", function(msg) {
-        console.log("Encountered error");
-        console.log(msg);
-        expect(true).toBeFalsy();
-        done();
+    simulation.set_handler("steady_state_changed", function(msg) {
+        if (current_step >= truth_table.length) {
+            fail("Unexpected trailing simulation steady state change. Simulation shouldn't be running.", msg);
+        }
+
+        if (!msg.steady) {
+            steady = false;
+            return;
+        }
+
+        expect(last_seen).toEqual(truth_table[current_step]);
+        steady = true;
+
+        simulation.stop();
     });
 
     simulation.set_handler("update", function(msg) {
-        if (msg.clock >= delay_for_step(truth_table.length)) {
-            console.log("Simulation time is above expected");
-            console.log(msg);
-            expect(true).toBeFalsy();
-            done();
-        }
-
         if (current_step >= truth_table.length) {
-            console.log("Unexpected trailing item updates");
-            console.log(msg);
-            expect(true).toBeFalsy();
-            return;
+            fail("Unexpected trailing item updates, simulation is supposed to be steady", msg);
         }
 
         var state = undefined;
@@ -426,48 +439,10 @@ function run_async_truth_table_simulation(simulation, inputs, outputs, truth_tab
             return false;
         }
 
-        if (!applyMessage(msg)) {
-            return;
-        }
-
-        //console.log(msg.clock + ": " + JSON.stringify(last_seen));
-
-        if (msg.clock < delay_for_step(current_step)) {
-            // Stepped to early, still unstable
-            --current_step;
-            //console.log("Stepped back to " + current_step);
-        } else if (msg.clock >= delay_for_step(current_step + 1)) {
-            // No messages for last step, skipped one?
-            if (!last_equal && updates_for_this_entry == 0) {
-                console.log("No valid solution reached for " + current_step);
-                console.log("  last equal: " + last_equal + " and no updates in this timeslot");
-                expect(true).toBeFalsy();
-            }
-
-            ++current_step;
-        }
-
-        var truth = truth_table[current_step];
-        if (msg.clock >= delay_for_step(current_step)
-            && LogikSim._.isEqual(last_seen, truth)) {
-
-            //console.log(current_step + "/" + (truth_table.length - 1) + " done");
-
-            ++current_step;
-            updates_for_this_entry = 0;
-
-            if (current_step >= truth_table.length) {
-                simulation.stop();
-            }
-
-            last_equal = LogikSim._.isEqual(last_seen, truth_table[current_step]);
-
-            //console.log("Next > " + delay_for_step(current_step) + ": " + JSON.stringify(truth_table[current_step]));
-        }
-
-        ++updates_for_this_entry;
+        applyMessage(msg);
     });
 
+    schedule_truth_table_row();
     simulation.start();
 }
 
