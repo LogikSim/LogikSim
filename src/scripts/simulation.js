@@ -43,12 +43,28 @@ LogikSim.Backend.Simulation.prototype = {
         return this._post_to_backend("start");
     },
     /**
-     * Quit event processing in the simulation.
-     * A simulation stopped this way cannot be restarted.
+     * Stop event processing in the simulation.
+     * A simulation stopped this way can be restarted with another start() call
      * @return {number} Request id
      */
     stop: function() {
-        return this._post_to_backend("stop");
+        return this._post_to_backend("stop")
+    },
+    /**
+     * Stop event processing in the simulation at a specific simulation time.
+     * @param when When to schedule the stop
+     * @return {number} Request id
+     */
+    stopAt: function(when) {
+        return this._post_to_backend("stop", { when: when });
+    },
+    /**
+     * Stop event processing in the simulation after a simulation time delay
+     * @param delay Simulation ticks to delay the stop
+     * @return {number} Request id
+     */
+    stopAfter: function(delay) {
+        return this._post_to_backend("stop", { delay: delay });
     },
     /**
      * Sets the given properties for the simulation.

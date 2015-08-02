@@ -34,25 +34,28 @@ LogikSim.Backend.Core = function(logger) {
     /** Total number of events scheduled for execution by this core since start. */
     this.scheduled_events = 0;
     /**
-     * Maximum interval between updating simulation clock as well
+     * Maximum interval in milliseconds between updating simulation clock as well
      * as returning control flow to the JS event loop
      */
-    this.housekeeping_interval = 0.05;
+    this.housekeeping_interval = 50;
     /**
      * Used to keep track of event groups for last-in-group notification.
      * See LogikSim.Backend.Event for more.
      */
     this.group = null;
-    /** Factor between wall-clock time and simulation clock */
+    /** Factor between wall-clock time in ms and simulation clock */
     this.simulation_rate = 1.0;
     /** False as long as core is processing events. */
-    this._quit = true;
+    this._stopped = true;
     /** setTimeout id to the next event processing call. */
     this._process_events_continuation = null;
     /** Last time a process_events call ended */
     this._last_processing_time = LogikSim.Backend.time();
     /** Timestamp of last call to start() */
     this._start_time = null;
+
+    /** Callback which gets called if the simulation becomes steady function(core, boolean) */
+    this.signal_steady_state_change = null;
 };
 
 LogikSim.Backend.Core.prototype = {
@@ -65,6 +68,10 @@ LogikSim.Backend.Core.prototype = {
     schedule: function(event) {
         var before = this.event_queue[0];
         this._schedule(event);
+
+        if(!before) {
+            if(this.signal_steady_state_change) this.signal_steady_state_change(false);
+        }
 
         if (before !== this.event_queue[0]) {
             this._process_events_immediate();
@@ -80,6 +87,10 @@ LogikSim.Backend.Core.prototype = {
         var before = this.event_queue[0];
         this._schedule_many(events);
 
+        if(!before) {
+            if(this.signal_steady_state_change) this.signal_steady_state_change(false);
+        }
+
         if (before !== this.event_queue[0]) {
             this._process_events_immediate();
         }
@@ -88,12 +99,12 @@ LogikSim.Backend.Core.prototype = {
      * Start simulation core.
      */
     start: function () {
-        if (this._start_time !== null) {
-            throw new LogikSim.Backend.BackendError("Simulation was already started once");
+        if (!this._stopped) {
+            return;
         }
 
         this.log.info("Starting event processing");
-        this._quit = false;
+        this._stopped = false;
         this._last_processing_time = LogikSim.Backend.time();
         this._start_time = this._last_processing_time;
 
@@ -106,11 +117,13 @@ LogikSim.Backend.Core.prototype = {
      * to ensure the JS event loop stays responsive.
      */
     _process_events: function () {
-        if (this._quit) {
+        if (this._stopped) {
             // Stop processing when asked to quit.
             clearTimeout(this._process_events_continuation);
             return;
         }
+
+        var steady_before_processing = this.is_steady_state();
 
         // Set target clock independent of wall-clock. This prevents the simulation
         // from trying to catch up which imho is behavior you want for an interactive
@@ -125,6 +138,9 @@ LogikSim.Backend.Core.prototype = {
             if (!this._process_next_event(target_clock)) {
                 break;
             }
+
+            if (this._stopped) // Stop processing immediately if asked to
+                return;
         }
 
         // If we still have events pending we will schedule ourselves
@@ -133,9 +149,11 @@ LogikSim.Backend.Core.prototype = {
         // to time.
         var target_delay = this.housekeeping_interval;
 
-        if (this.event_queue.length > 0) {
+        if (!this.is_steady_state()) {
             var next_event_delay = (this.event_queue[0].when - this.clock) / this.simulation_rate;
             target_delay = Math.min(this.housekeeping_interval, next_event_delay);
+        } else if (!steady_before_processing) {
+            if (this.signal_steady_state_change) this.signal_steady_state_change(true);
         }
 
         this._process_events_continuation = setTimeout(this._process_events.bind(this), target_delay);
@@ -143,16 +161,22 @@ LogikSim.Backend.Core.prototype = {
         this._last_processing_time = LogikSim.Backend.time();
     },
     /**
-     * Causes the core to terminate execution as soon as possible.
+     * Causes the core to stop execution as soon as possible.
      */
-    quit: function() {
-        if (this._quit) {
-            throw new LogikSim.Backend.BackendError("Simulation was already stopped");
+    stop: function() {
+        if (this._stopped) {
+            return;
         }
 
         this.log.info("Stopping event processing");
-        this._quit = true;
+        this._stopped = true;
         clearTimeout(this._process_events_continuation);
+    },
+    /**
+     * @return {boolean} True if no events are pending meaning the simulation is in a steady state.
+     */
+    is_steady_state: function() {
+        return this.event_queue.length === 0;
     },
     /**
      * Broken out inner core of event processing loop.
@@ -161,7 +185,7 @@ LogikSim.Backend.Core.prototype = {
      * @private
      */
     _process_next_event: function(upto_clock) {
-        if (this.event_queue.length === 0 || this.event_queue[0].when > upto_clock) {
+        if (this.is_steady_state() || this.event_queue[0].when > upto_clock) {
             // If queue is empty circuit is steady state so simulation is
             // infinitely fast. Also we need this clock behavior to make delta
             // timing work. It totally makes sense though ;)
@@ -175,7 +199,7 @@ LogikSim.Backend.Core.prototype = {
         this.clock = event.when;
         this.group = event.group;
 
-        var last_in_group = (this.event_queue.length === 0
+        var last_in_group = (this.is_steady_state()
             || this.event_queue[0].group !== this.group
             || this.event_queue[0].when !== this.clock);
 
@@ -193,6 +217,7 @@ LogikSim.Backend.Core.prototype = {
      */
     _schedule: function(event) {
         event._order = this.scheduled_events;
+
         this.event_queue.put(event);
         this.scheduled_events += 1;
     },
@@ -203,7 +228,7 @@ LogikSim.Backend.Core.prototype = {
      * @private
      */
     _schedule_many: function(events) {
-        events.forEach(this.schedule, this);
+        events.forEach(this._schedule, this);
     },
     /**
      * Re-schedule event processing for immediate execution.

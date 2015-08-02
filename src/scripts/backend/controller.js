@@ -25,6 +25,7 @@ LogikSim.Backend = LogikSim.Backend || {};
  */
 LogikSim.Backend.Controller = function(core, component_library, logger) {
     this.core = core;
+    this.core.signal_steady_state_change = this._on_core_steady_state_changed.bind(this);
     this.lib = component_library;
     this.log = typeof logger !== 'undefined' ? logger : LogikSim.Logger("Ctrl");
 
@@ -161,12 +162,24 @@ LogikSim.Backend.Controller.prototype = {
         this._post_to_frontend("started");
     },
     /**
-     * Quits the simulation.
+     * Stops the simulation.
      * @private
      */
-    _on_stop: function() {
-        this.core.quit();
-        this._post_to_frontend("stopped");
+    _on_stop: function(message) {
+        if (typeof message.when !== 'undefined') {
+            this.core.schedule(new LogikSim.Backend.Action(
+                message.when,
+                this.core.stop.bind(this.core)
+            ));
+        } else if (typeof message.delay !== 'undefined') {
+            this.core.schedule(new LogikSim.Backend.Action(
+                this.core.clock + message.delay,
+                this.core.stop.bind(this.core)
+            ));
+        } else {
+            this.core.stop();
+            this._post_to_frontend("stopped");
+        }
     },
     /**
      * Applies given simulation properties.
@@ -349,5 +362,16 @@ LogikSim.Backend.Controller.prototype = {
             throw new LogikSim.Backend.BackendError("No component with id '" + id + "'");
         }
         return component;
+    },
+    /**
+     * Attached as core callback to forward entering/leaving steady state to the frontend
+     *
+     * @param steady If true the simulation has entered a steady state
+     * @private
+     */
+    _on_core_steady_state_changed: function(steady) {
+        this._post_to_frontend("steady_state_changed", {
+            steady: steady
+        });
     }
 };

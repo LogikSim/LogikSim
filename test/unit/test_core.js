@@ -5,11 +5,11 @@ describe("A backend core", function() {
         core.start();
         setTimeout(function () {
             var clock = core.clock;
-            expect(clock).toBeGreaterThan(80);
-            core.quit();
+            expect(clock).toBeGreaterThan(50);
+            core.stop();
             setTimeout(function () {
                 expect(core.clock).toBe(clock);
-                expect(core.clock).toBeLessThan(120);
+                expect(core.clock).toBeLessThan(100);
                 done();
             }, 100);
         }, 100);
@@ -40,22 +40,11 @@ describe("A backend core", function() {
                 expect(fe2.process.calls.any()).toBe(false);
                 expect(e2.process.calls.any()).toBe(false);
 
-                core.quit();
+                core.stop();
                 done();
             }, 100);
         }, 100);
     }, 300);
-
-    it("should throw an exception if started or stopped twice", function() {
-        var core = new LogikSim.Backend.Core(mk_test_logger("core"));
-
-        expect(core.quit.bind(core)).toThrowError(LogikSim.Backend.BackendError);
-        core.start();
-        expect(core.start.bind(core)).toThrowError(LogikSim.Backend.BackendError);
-        core.quit();
-        expect(core.start.bind(core)).toThrowError(LogikSim.Backend.BackendError);
-        expect(core.quit.bind(core)).toThrowError(LogikSim.Backend.BackendError);
-    });
 
     /*
         As testing the core asynchronously is pretty unwieldy and slow.
