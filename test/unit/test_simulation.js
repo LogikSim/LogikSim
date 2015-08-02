@@ -43,7 +43,7 @@ function do_test_simulation_with(description, simulation_factory) {
             });
 
             simulation.start();
-        }, 100);
+        }, 1000);
 
         it("should respond with an error if a receiving a bogus request", function (done) {
             dontDieOnError();
@@ -77,7 +77,7 @@ function do_test_simulation_with(description, simulation_factory) {
 
             simulation.schedule_edge(and_id, 0, true, 1);
             simulation.schedule_edge(and_id, 1, true, 1);
-        }, 100);
+        }, 1000);
 
         it("should be able to instantiate and destruct components", function(done) {
             var and_id = simulation.create_component("AND").component_id;
@@ -91,7 +91,7 @@ function do_test_simulation_with(description, simulation_factory) {
             simulation.start();
 
             simulation.delete_component(and_id);
-        }, 100);
+        }, 1000);
 
         it("should be able to query and set simulation properties", function(done) {
             var did_set_it = false;
@@ -109,7 +109,7 @@ function do_test_simulation_with(description, simulation_factory) {
             simulation.start();
 
             simulation.query_simulation_properties();
-        }, 100);
+        }, 1000);
 
         it("should be able to query and set custom simulation properties", function(done) {
             var did_set_it = false;
@@ -127,7 +127,7 @@ function do_test_simulation_with(description, simulation_factory) {
             simulation.start();
 
             simulation.query_simulation_properties();
-        }, 100);
+        }, 1000);
 
         it("should be able to update and query component properties", function(done) {
             simulation.start();
@@ -159,7 +159,7 @@ function do_test_simulation_with(description, simulation_factory) {
 
             simulation.query_component(and_id);
 
-        }, 100);
+        }, 1000);
 
         it("should be able to enumerate the templates in the backend library", function(done) {
             simulation.set_handler("template_enumeration", function(msg) {
@@ -167,7 +167,7 @@ function do_test_simulation_with(description, simulation_factory) {
             });
 
             simulation.enumerate_templates();
-        }, 100);
+        }, 1000);
 
         it("should be able to connect and disconnect components", function(done) {
             var c1_id = simulation.create_component("OR").component_id;
@@ -213,7 +213,7 @@ function do_test_simulation_with(description, simulation_factory) {
             });
             simulation.connect(c1_id, 0, c2_id, 0);
             simulation.disconnect(c1_id, 0);
-        }, 100);
+        }, 1000);
 
         it("should correctly simulate a compound half-adder", function(done) {
             var x = simulation.create_component("Interconnect").component_id;
@@ -274,7 +274,7 @@ function do_test_simulation_with(description, simulation_factory) {
             ];
 
             run_async_truth_table_simulation(simulation, inputs, outputs, truth_table, done);
-        }, 100);
+        }, 1000);
 
         it("should correctly simulate a sr flip-flow", function(done) {
             var i = {
@@ -319,7 +319,7 @@ function do_test_simulation_with(description, simulation_factory) {
             ];
 
             run_async_truth_table_simulation(simulation, i, o, truth_table, done);
-        }, 100);
+        }, 1000);
 
     }); // end of describe
 }
