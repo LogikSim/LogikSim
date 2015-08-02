@@ -7,7 +7,7 @@ LogikSim._ = _.noConflict();
 /**
  * Returns a high precision, monotonic timestamp.
  * @function LogikSim.Backend.time
- * @returns {number}
+ * @returns {number} Timestamp in milliseconds
  */
 if (typeof performance !== 'undefined') {
     LogikSim.Backend.time = function () {
@@ -38,24 +38,27 @@ LogikSim.Backend.make_priority_queue = function(cmp_fu) {
      * TODO: Replace this
      * @param item Item to insert
      */
-    pq.put = function(item) {
-        var min = 0;
-        var max = this.length;
+    Object.defineProperty(pq, 'put', {
+        value: function (item) {
+            var min = 0;
+            var max = this.length;
 
-        while (min !== max) {
-            var center = ((max - min) >> 1) + min;
-            var cmp = cmp_fu(item, this[center]);
-            if (cmp < 0) {
-                max = center;
-            } else if (cmp > 0) {
-                min = center + 1;
-            } else {
-                min = max = center;
+            while (min !== max) {
+                var center = ((max - min) >> 1) + min;
+                var cmp = cmp_fu(item, this[center]);
+                if (cmp < 0) {
+                    max = center;
+                } else if (cmp > 0) {
+                    min = center + 1;
+                } else {
+                    min = max = center;
+                }
             }
-        }
 
-        this.splice(min, 0, item);
-    };
+            this.splice(min, 0, item);
+        },
+        enumerable: false
+    });
 
     return pq;
 };
